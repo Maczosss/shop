@@ -110,7 +110,14 @@ public class AbstractCrudRepository<T, ID> implements CrudRepository<T, ID>{
 
     @Override
     public List<T> getAll() {
-        return null;
+        var sql = "select * from %s;".formatted(
+                getTableName()
+        );
+        System.out.println(sql);
+        return jdbi.withHandle(handle -> handle
+                .createQuery(sql)
+                .mapToBean(entityType)
+                .list());
     }
 
     private String getTableName(){
