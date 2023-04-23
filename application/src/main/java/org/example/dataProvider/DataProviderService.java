@@ -7,15 +7,16 @@ import org.example.model.Category;
 import org.example.model.Client;
 import org.example.model.Order;
 import org.example.model.Product;
-import org.example.repository.ClientRepositoryImpl;
-import org.example.repository.OrderRepositoryImpl;
-import org.example.repository.ProductRepositoryImpl;
+import org.example.repository.*;
 
 import java.util.*;
 import java.util.function.Function;
 
 public class DataProviderService {
 
+    private static ClientRepositoryImpl clientRepository;
+    private static ProductRepositoryImpl productRepository;
+    private static OrderRepositoryImpl orderReposiory;
     private static List<Client> clients = List.of(Client
                     .builder()
                     .firstName("Maciej")
@@ -112,6 +113,8 @@ public class DataProviderService {
     public static void createDatabaseEntries(Properties appProperties){
         var jdbi = DatabaseConnection.create(appProperties);
 
+        //TODO add creating shop database
+
         var createClientTableSql = """
                 create table if not exists clients (
                 id integer primary key auto_increment,
@@ -154,10 +157,9 @@ public class DataProviderService {
         jdbi.useHandle(handle -> handle.execute(createOrderTableSql));
         jdbi.useHandle(handle -> handle.execute(createOrderItemTableSql));
 
-
-        var clientRepository = new ClientRepositoryImpl(jdbi);
-        var productRepository = new ProductRepositoryImpl(jdbi);
-        var orderReposiory = new OrderRepositoryImpl(jdbi);
+       clientRepository = new ClientRepositoryImpl(jdbi);
+       productRepository = new ProductRepositoryImpl(jdbi);
+       orderReposiory = new OrderRepositoryImpl(jdbi);
 
 
         System.out.println(clientRepository.saveAll(clients));
@@ -166,10 +168,7 @@ public class DataProviderService {
 
         System.out.println(orderReposiory.saveAllOrders(createRandomOrders(
                 10,
-                3,
-                clientRepository,
-                productRepository,
-                orderReposiory)));
+                3)));
 
 
         var test = clientRepository.getByFields(List.of(
@@ -249,30 +248,11 @@ public class DataProviderService {
 //        var result = mapper.getFromJsonFile(appProperties.getProperty("jsonPath"));
     }
 
-    private void createOrdersFromDatabase(ClientRepositoryImpl clientRepository){
-        List.of(
-                Order
-                        .builder()
-                        .client(clientRepository.getByFields(
-                                List.of(new TempField("Maciej", "Jaremowicz"))
-                        ).get(0))
-                        .products(List.of(
-                                Product
-                                        .builder()
-                                        .name("Test")
-                                        .price(0F)
-                                        .build()
-                        ))
-                        .build()
-        );
-    }
 
     private static List<Order> createRandomOrders(
-            int numberOfOrders,
-            int maxNumberOfProducts,
-            ClientRepositoryImpl clientRepository,
-            ProductRepositoryImpl productRepository,
-            OrderRepositoryImpl orderReposiory) {
+            int numberOfOrders, //make random
+            int maxNumberOfProducts //make random
+            ) {
         //todo random number of products, now its hardcoded to 3
         var clients = clientRepository.getAll();
         var products = productRepository.getAll();

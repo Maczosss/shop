@@ -11,7 +11,7 @@
     <modules>
         <module>application</module>
         <module>data-loader</module>
-
+        <module>UI</module>
     </modules>
 
     <properties>
