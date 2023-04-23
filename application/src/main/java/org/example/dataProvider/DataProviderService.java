@@ -3,7 +3,6 @@ package org.example.dataProvider;
 import org.example.DatabaseConnection;
 import org.example.databaseMapper.TempField;
 import org.example.fileMapper.AbstractFromFileMapper;
-import org.example.jsonMapper.AbstractJsonMapper;
 import org.example.model.Category;
 import org.example.model.Client;
 import org.example.model.Order;
@@ -136,22 +135,24 @@ public class DataProviderService {
                 CREATE TABLE IF NOT EXISTS orders (
                 id integer primary key auto_increment,
                 client_id int,
-                product_id int,
-                FOREIGN KEY (client_id) REFERENCES clients(id),
-                FOREIGN KEY (product_id) REFERENCES products(id)
+                total_quantity int,
+                FOREIGN KEY (client_id) REFERENCES clients(id)
                 );""";
+
         var createOrderItemTableSql = """
                 CREATE TABLE IF NOT EXISTS order_item (
                 id integer primary key auto_increment,
-                client_id int,
+                /*quantity int, quantity is problematic, would be resolved when grouping by before insert would be applied*/
+                order_id int,
                 product_id int,
-                FOREIGN KEY (client_id) REFERENCES clients(id),
+                FOREIGN KEY (order_id) REFERENCES orders(id),
                 FOREIGN KEY (product_id) REFERENCES products(id)
                 );""";
 
         jdbi.useHandle(handle-> handle.execute(createClientTableSql));
         jdbi.useHandle(handle-> handle.execute(createProductTableSql));
         jdbi.useHandle(handle -> handle.execute(createOrderTableSql));
+        jdbi.useHandle(handle -> handle.execute(createOrderItemTableSql));
 
 
         var clientRepository = new ClientRepositoryImpl(jdbi);
@@ -159,25 +160,16 @@ public class DataProviderService {
         var orderReposiory = new OrderRepositoryImpl(jdbi);
 
 
-        System.out.println(clientRepository.save(Client
-                .builder()
-                .firstName("Maciej")
-                .lastName("Jaremowicz")
-                .age(25)
-                .cash(2000F)
-                .build()));
+        System.out.println(clientRepository.saveAll(clients));
 
-//        System.out.println(clientRepository.saveAll(clients));
-//
-//        System.out.println(productRepository.saveAll(products));
+        System.out.println(productRepository.saveAll(products));
 
-//        System.out.println(orderReposiory.saveAll(createRandomOrders(
-//                10,
-//                3,
-//                clientRepository,
-//                productRepository,
-//                orderReposiory)));
-        System.out.println(orderReposiory.test());
+        System.out.println(orderReposiory.saveAllOrders(createRandomOrders(
+                10,
+                3,
+                clientRepository,
+                productRepository,
+                orderReposiory)));
 
 
         var test = clientRepository.getByFields(List.of(
@@ -281,6 +273,7 @@ public class DataProviderService {
             ClientRepositoryImpl clientRepository,
             ProductRepositoryImpl productRepository,
             OrderRepositoryImpl orderReposiory) {
+        //todo random number of products, now its hardcoded to 3
         var clients = clientRepository.getAll();
         var products = productRepository.getAll();
         var ordersToSave = new ArrayList<Order>();
@@ -295,7 +288,7 @@ public class DataProviderService {
                                     .mapToObj(obj->products.get(obj))
                                     .toList()));
         }
-        return orderReposiory.saveAll(ordersToSave);
+        return ordersToSave;
     }
 
     private static List<Product> getRandomProducts(int size, List<Product> availableProducts){

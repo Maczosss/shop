@@ -3,7 +3,6 @@ package org.example.databaseMapper;
 import com.google.common.base.CaseFormat;
 import org.atteo.evo.inflector.English;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.argument.internal.NamedArgumentFinderFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -37,8 +36,8 @@ public class AbstractCrudRepository<T, ID> implements CrudRepository<T, ID>{
             );
             var insertedRowNumber =
                     jdbi.withHandle(handle -> handle.execute(sql));
-            System.out.println(sql);
-            System.out.println(insertedRowNumber);
+//            System.out.println(sql);
+//            System.out.println(insertedRowNumber);
             if(insertedRowNumber>0){
                 insertedRow.set(
                         findLast(1).stream().findFirst()
@@ -120,13 +119,13 @@ public class AbstractCrudRepository<T, ID> implements CrudRepository<T, ID>{
                 .list());
     }
 
-    private String getTableName(){
+    protected String getTableName(){
         return English.plural(
                 CaseFormat.UPPER_CAMEL
                         .to(CaseFormat.LOWER_UNDERSCORE, entityType.getSimpleName()));
     }
 
-    private String getColumnNamesForInsert(){
+    protected String getColumnNamesForInsert(){
         var fieldsNames = Arrays
                 .stream(entityType.getDeclaredFields())
                 .map(Field::getName)

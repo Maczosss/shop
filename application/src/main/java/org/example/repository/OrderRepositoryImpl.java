@@ -4,12 +4,11 @@ import com.mysql.cj.xdevapi.Client;
 import org.example.databaseMapper.AbstractCrudRepository;
 import org.example.model.Order;
 import org.example.model.Product;
+import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
-
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+
 
 public class OrderRepositoryImpl
         extends AbstractCrudRepository<Order, Long>
@@ -32,32 +31,40 @@ public class OrderRepositoryImpl
     @Override
     public List<Order> saveAllOrders(List ordersToSave) {
         var orders = (List<Order>) ordersToSave;
-//        var insertedRows = new AtomicReference<List<Order>>(List.of());
-//        jdbi.useTransaction(transaction -> {
-//            var sql = "insert into order values %s;".formatted(
-//                    getTableName(),
-//                    getColumnNamesForInsert(),
-//                    objectsToSave.stream()
-//                            .map(this::getValuesForInsert)
-//                            .collect(Collectors.joining(", "))
-//            );
-//            var insertedRowCount = jdbi.withHandle(
-//                    handle ->
-//                            handle.execute(sql));
-//            if(insertedRowCount>0){
-//                insertedRows.set(findLast(insertedRowCount));
-//            }
-//        });
-//        return insertedRows.get();
+
+        try(Handle handle = jdbi.open()){
+            handle.begin();
+            for(Order order: orders){
+                var orderId = handle.createUpdate("insert into %s %s values %s;".formatted(
+                    super.getTableName(),
+                    "( %s, %s )".formatted(
+                            "client_id",
+                            "total_quantity"
+                    ),
+                        "( %s, %s )".formatted(
+                                order.getClient().getId(),
+                                order.getProducts().size())))
+                        .executeAndReturnGeneratedKeys()
+                        .mapTo(Long.class)
+                        .one();
+
+                for(Product product : order.getProducts()){
+                    handle.createUpdate("insert into %s %s values %s;".formatted(
+                            "order_item",
+                            "( order_id, product_id )",
+                            "( %s , %s )".formatted(
+                                    orderId,
+                                    product.getId()
+                            )
+                    ))
+                            .execute();
+                }
+            }
+            handle.commit();
+        }catch(Exception e) {
+            System.out.println("Error while creating orders tables" +  e.getMessage());
+            throw new RuntimeException("Error while creating orders tables", e);
+        }
         return orders;
-    }
-    public boolean test(){
-        jdbi.useTransaction(transaction -> {
-            var sql = "insert into orders (client_id , product_id) values (1,2);";
-            jdbi.withHandle(
-                    handle ->
-                            handle.execute(sql));
-        });
-        return true;
     }
 }
