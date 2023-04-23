@@ -1,8 +1,6 @@
 package org.example.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -10,8 +8,11 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Setter
+@Builder
 public class Product{
 
+    private Long id;
     private String name;
     private String category;
     private Float price;
@@ -30,7 +31,7 @@ public class Product{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Product product = (Product) o;
-        return Objects.equals(name, product.name) && Objects.equals(category, product.category) && Objects.equals(price, product.price);
+        return Objects.equals(name, product.name) && category == product.category && Objects.equals(price, product.price);
     }
 
     @Override
@@ -38,3 +39,4 @@ public class Product{
         return Objects.hash(name, category, price);
     }
 }
+
