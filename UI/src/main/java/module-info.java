@@ -9,3 +9,9 @@ module com.example.ui {
     opens com.example.ui to javafx.fxml;
     exports com.example.ui;
 }
+
+/*
+requires org.controlsfx.controls;
+
+        groupId        controls to artifactID
+ */
