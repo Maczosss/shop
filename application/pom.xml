@@ -21,7 +21,7 @@
         <dependency>
             <groupId>org.example</groupId>
             <artifactId>data-loader</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
