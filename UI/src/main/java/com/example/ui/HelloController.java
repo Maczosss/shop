@@ -29,6 +29,7 @@ public class HelloController implements Initializable {
     }
     @FXML
     protected void onHighestPayingCustomerInCategoryClick(ActionEvent event){
+        ResponseApi.get().getHighestPayingCustomer();
         welcomeText.setText(ResponseApi.getHighestPayingCustomerInCategory(getItem(event)));}
 
     @Override

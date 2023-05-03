@@ -62,8 +62,8 @@ public class OrderRepositoryImpl
             }
             handle.commit();
         }catch(Exception e) {
-            System.out.println("Error while creating orders tables" +  e.getMessage());
-            throw new RuntimeException("Error while creating orders tables", e);
+            System.out.println("Error while creating orders table" +  e.getMessage());
+            throw new RuntimeException("Error while creating orders table", e);
         }
         return orders;
     }

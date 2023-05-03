@@ -1,7 +1,10 @@
 package org.application.repository;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.application.model.Category;
+import org.application.model.Product;
 import org.dataLoader.databaseMapper.AbstractCrudRepository;
 import org.application.model.Client;
 import org.jdbi.v3.core.Handle;
@@ -42,10 +45,29 @@ public class ClientRepositoryImpl
                 .first()
         );
     }
+
     @Override
     public Client getHighestPayingClientInCategory(Category category) {
-        return null;
+
+        var sql = """
+                SELECT c.firstName, c.lastName, SUM(p.price) AS total_order_value
+                FROM clients c
+                JOIN orders o ON c.id = o.client_id
+                JOIN order_item oi ON o.id = oi.order_id
+                JOIN products p ON oi.product_id = p.id && p.category='%s'
+                GROUP BY c.id
+                ORDER BY total_order_value DESC
+                LIMIT 1;
+                """.formatted(category.getName());
+
+        return jdbi.withHandle(handle -> handle
+                .createQuery(sql)
+                .mapToBean(Client.class)
+                .first()
+        );
+
     }
+
     @Override
     public Map<Client, BigDecimal> checkClientsDebt() {
         var sql = """
@@ -64,14 +86,14 @@ public class ClientRepositoryImpl
         //todo ogarnąć opcję z where, prawdopodobnie nie da się bez subquery
         var clientsWithDebt = new AtomicReference<List<ClientDebtMapper>>(List.of());
 
-        try(Handle handle = jdbi.open()){
-           clientsWithDebt.set(
+        try (Handle handle = jdbi.open()) {
+            clientsWithDebt.set(
                     handle
                             .registerRowMapper(new ClientDebtMapper())
                             .createQuery(sql)
                             .mapTo(ClientDebtMapper.class)
                             .list());
-            for(ClientDebtMapper client: clientsWithDebt.get()){
+            for (ClientDebtMapper client : clientsWithDebt.get()) {
                 System.out.printf(
                         "%s %s, has debt %s%n", client.getCLient().getFirstName(),
                         client.getCLient().getLastName(),
@@ -86,6 +108,215 @@ public class ClientRepositoryImpl
                         .toMap(
                                 ClientDebtMapper::getCLient,
                                 ClientDebtMapper::getDebt));
+    }
+
+    @Override
+    public Map<Integer, String> getMostBoughtProductCategoryBasedOnAge() {
+        //SQL that creates histogram of product_id based on age
+        var sql = """
+                SELECT c.age, p.id AS most_frequent_product_id, COUNT(*) AS repetitions, p.category
+                FROM clients c
+                JOIN orders o ON c.id = o.client_id
+                JOIN order_item oi ON o.id = oi.order_id
+                JOIN products p ON oi.product_id = p.id
+                WHERE p.id IN (
+                SELECT p2.id
+                FROM products p2
+                JOIN order_item oi2 ON p2.id = oi2.product_id
+                GROUP BY p2.id
+                HAVING COUNT(*) > 1
+                )
+                GROUP BY c.age, p.id
+                ORDER BY c.age, repetitions DESC;
+                """;
+        //sql that gathers most frequent product id, not used. Reason is we can have false positive
+        // when 2 or more products have the same number of repetitions
+//        var sql = """
+//                SELECT c.firstName, c.lastName, SUM(p.price) AS total_order_value
+//                FROM clients c
+//                JOIN orders o ON c.id = o.client_id
+//                JOIN order_item oi ON o.id = oi.order_id
+//                JOIN products p ON oi.product_id = p.id
+//                GROUP BY c.id
+//                ORDER BY total_order_value DESC
+//                """;
+
+        var ageHistogram = new AtomicReference<List<AgeHistogramMapper>>(List.of());
+
+        try (Handle handle = jdbi.open()) {
+            ageHistogram.set(
+                    handle
+                            .registerRowMapper(new AgeHistogramMapper())
+                            .createQuery(sql)
+                            .mapTo(AgeHistogramMapper.class)
+                            .list());
+        }
+        // group age and category
+        Map<Integer, Map<String, Integer>> groupedByAgeAndCategory = ageHistogram.get().stream()
+                .collect(Collectors.groupingBy(AgeHistogramMapper::getAge,
+                        Collectors.groupingBy(AgeHistogramMapper::getCategory,
+                                Collectors.summingInt(AgeHistogramMapper::getRepetitions))));
+
+        return groupedByAgeAndCategory.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+                    Map.Entry<String, Integer> maxEntry = null;
+                    for (Map.Entry<String, Integer> tempEntry : entry.getValue().entrySet()) {
+                        if (maxEntry == null || tempEntry.getValue() > maxEntry.getValue()) {
+                            maxEntry = tempEntry;
+                        }
+                    }
+                    return maxEntry.getKey();
+                }));
+    }
+
+    @Override
+    public Map<String, Map<String, Product>> getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(
+            Category category) {
+        var highestPriceSql = """
+                SELECT p.id, p.name, p.category, p.price
+                FROM products p
+                GROUP BY p.id
+                HAVING p.category='%s'
+                ORDER BY p.price DESC
+                LIMIT 1;
+                """.formatted(category.getName());
+        var lowestPriceSql = """
+                SELECT p.id, p.name, p.category, p.price
+                FROM products p
+                GROUP BY p.id
+                HAVING p.category='%s'
+                ORDER BY p.price ASC
+                LIMIT 1;
+                """.formatted(category.getName());
+
+        var avrPriceSql = """
+                SELECT avg(p.price) as avg_price
+                FROM products p
+                Group BY p.category
+                HAVING p.category='%s'
+                """.formatted(category.getName());
+
+
+        var minMaxAverageOfProductsInCategory = new AtomicReference<Map<String, Map<String, Product>>>(Map.of());
+
+        try (Handle handle = jdbi.open()) {
+            var lowestPrice =
+                    handle
+                            .createQuery(lowestPriceSql)
+                            .mapToBean(Product.class)
+                            .first();
+            var highestPrice =
+                    handle
+                            .createQuery(highestPriceSql)
+                            .mapToBean(Product.class)
+                            .first();
+
+            var avg = handle
+                    .createQuery(avrPriceSql)
+                    .mapTo(String.class)
+                    .findOne();
+
+            minMaxAverageOfProductsInCategory.set(Map.of(
+                    "Lowest value Product",
+                    Map.of(lowestPrice.getPrice().toString(), lowestPrice),
+                    "Highest value Product",
+                    Map.of(highestPrice.getPrice().toString(), highestPrice),
+                    "Average price of products in category %s".formatted(category.getName()),
+                    Map.of(avg.orElse("Error occurred while mapping average value")
+                            , new Product())
+
+            ));
+        }
+        return minMaxAverageOfProductsInCategory.get();
+    }
+
+    public Map<Category, List<Client>> getClientsThatBoughtTheMostProductsBasedOnCategory() {
+
+        var sql = """
+                SELECT pr.category, c.id, c.firstName, c.lastName, COUNT(*) AS count
+                				FROM products pr
+                				JOIN order_item oi ON pr.id = oi.product_id
+                				JOIN orders o ON oi.order_id = o.id
+                				JOIN clients c ON o.client_id = c.id
+                				GROUP BY pr.category, c.id
+                				   HAVING COUNT(*) = (SELECT MAX(sub.count)
+                									  FROM (SELECT COUNT(*) AS count
+                								FROM products p
+                								JOIN order_item oi ON p.id = oi.product_id
+                								JOIN orders o ON oi.order_id = o.id
+                								JOIN clients c ON o.client_id = c.id
+                								WHERE p.category = pr.category
+                								GROUP BY c.id) sub);
+                """;
+
+        //todo zapytać czy jest to poprawne?
+        var resultsMap= new AtomicReference<Map<Category, List<Client>>>(Map.of());
+
+        try (Handle handle = jdbi.open()) {
+            handle.createQuery(sql)
+                    .map((r, ctx) -> {
+                        var result = new Object() {
+
+                            public String category = r.getString("category");
+                            public String firstName = r.getString("firstName");
+                            public String lastName = r.getString("lastName");
+
+                            public Category getCategory(){
+                                return Arrays.stream(Category.values())
+                                        .filter((c)-> c.getName().equals(category)).findAny().get();
+                            }
+                          public Client getClient(){
+                                return new Client(0L,firstName, lastName,0,0f);
+                          }
+
+                        };
+                        //complicated logic but there is possibility that there are more than one client,
+                        //that bought highest number of products from category
+                        //so this instance needs to be resolved,
+                        // with multiple clients in list assigned to one category key in the map
+                        if(resultsMap.get()
+                                .keySet()
+                                .stream()
+                                .anyMatch((element)->element.getName().equals(result.category))){
+                            var tempMap = resultsMap.get();
+                            tempMap.get(Category.getCategory(result.category)).add(result.getClient());
+                            resultsMap.set(tempMap);
+                        }
+                        else{
+                            var currentCategory = Category.getCategory(result.category);
+                            var tempMap = new HashMap<>(resultsMap.get());
+                            tempMap.put(currentCategory, new LinkedList<>());
+                            tempMap.get(currentCategory).add(result.getClient());
+                            resultsMap.set(tempMap);
+                        }
+                        return result;
+                    }
+                    ).collect(Collectors.toList());
+
+        }
+    return resultsMap.get();
+    }
+}
+
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+class AgeHistogramMapper implements RowMapper<AgeHistogramMapper> {
+    private int age;
+    private Long productId;
+    private int repetitions;
+    private String category;
+
+    @Override
+    public AgeHistogramMapper map(ResultSet rs, StatementContext ctx) throws SQLException {
+        var entry =
+                new AgeHistogramMapper(rs.getInt("age"),
+                        rs.getLong("most_frequent_product_id"),
+                        rs.getInt("repetitions"),
+                        rs.getString("category"));
+
+        return entry;
     }
 }
 
@@ -107,7 +338,8 @@ class ClientDebtMapper implements RowMapper<ClientDebtMapper> {
         var entry =
                 new ClientDebtMapper(new Client((long) rs.getInt("id"),
                         rs.getString("firstName"),
-                        rs.getString("lastName")),
+                        rs.getString("lastName"),
+                        rs.getBigDecimal("cash")),
                         BigDecimal.valueOf(rs.getInt("debt")).abs());
         return entry;
     }

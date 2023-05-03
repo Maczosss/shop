@@ -31,7 +31,7 @@ public class DataProviderService {
                     .builder()
                     .firstName("Andrzej")
                     .lastName("Kowalski")
-                    .age(50)
+                    .age(25)
                     .cash(1000000F)
                     .build(),
             Client
@@ -167,7 +167,7 @@ public class DataProviderService {
 
         System.out.println(clientRepository.saveAll(clients));
 
-        System.out.println(productRepository.saveAll(products));
+//        System.out.println(productRepository.saveAll(products));
 
         System.out.println(orderReposiory.saveAllOrders(createRandomOrders(
                 10,
@@ -270,6 +270,9 @@ public class DataProviderService {
                                     .ints(maxNumberOfProducts, 0, products.size())
                                     .mapToObj(obj->products.get(obj))
                                     .toList()));
+        }
+        for(Order order : ordersToSave){
+            System.out.println("Client: "+ order.getClient()+ " Buys: "+ order.getProducts());
         }
         return ordersToSave;
     }

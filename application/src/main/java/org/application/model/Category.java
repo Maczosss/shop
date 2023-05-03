@@ -19,4 +19,12 @@ public enum Category {
     public String getName() {
         return name;
     }
+    public static Category getCategory(String categoryName){
+        for (Category category : Category.values()) {
+            if (category.getName().equals(categoryName)) {
+                return category;
+            }
+        }
+        throw new IllegalArgumentException("Unknown category name: " + categoryName);
+    }
 }

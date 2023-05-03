@@ -2,6 +2,7 @@ package org.application.model;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 @NoArgsConstructor
@@ -17,10 +18,12 @@ public class Client{
     private Integer age;
     private Float cash;
 
-    public Client(Long id, String firstName, String lastName) {
+    public Client(Long id, String firstName, String lastName, BigDecimal cash) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
+        //todo, change float everywhere!
+        this.cash = cash.floatValue();
     }
 
     @Override
