@@ -10,8 +10,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="484.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.ui.AppController">
+<VBox prefHeight="524.0" prefWidth="855.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.ui.AppController">
   <children>
     <MenuBar VBox.vgrow="NEVER">
       <menus>
@@ -54,26 +53,14 @@
     </MenuBar>
     <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="529.0" prefWidth="640.0" VBox.vgrow="ALWAYS">
          <children>
-            <TextArea layoutX="23.0" layoutY="27.0" prefHeight="150.0" prefWidth="369.0" fx:id="resultArea"/>
-            <ChoiceBox layoutX="440.0" layoutY="27.0" prefWidth="150.0" fx:id="checkCategory"/>
-            <Button layoutX="23.0" layoutY="188.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
-                    text="Highest paying customer"
-                    onAction="#onHighestPayingCustomerClick"/>
-            <Button layoutX="23.0" layoutY="232.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
-                    text="Highest paying customer in specified category"
-                    onAction="#onHighestPayingCustomerInSpecifiedCategoryClick"/>
-            <Button layoutX="23.0" layoutY="276.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
-                    text="Display clients with debt"
-                    onAction="#onDisplayClientsWithDebtClick"/>
-            <Button layoutX="23.0" layoutY="317.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
-                    text="Get data on most bought product in category based on age"
-                    onAction="#onGetDataOnMostBoughtProductInCategoryBasedOnAgeClick"/>
-            <Button layoutX="23.0" layoutY="360.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
-                    text="Highest, lowest and average price products in category"
-                    onAction="#onGetMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategoryClick"/>
-            <Button layoutX="23.0" layoutY="407.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
-                    text="Clients that bought highest number of products in category"
-                    onAction="#onClientsThatBoughtHighestNumberOfProductsInCategoryClick"/>
+            <TextArea fx:id="resultArea" layoutX="23.0" layoutY="27.0" prefHeight="180.0" prefWidth="571.0" />
+            <ChoiceBox fx:id="checkCategory" layoutX="646.0" layoutY="27.0" prefWidth="150.0" />
+            <Button layoutX="23.0" layoutY="244.0" mnemonicParsing="false" onAction="#onHighestPayingCustomerClick" prefHeight="31.0" prefWidth="571.0" text="Highest paying customer" />
+            <Button layoutX="23.0" layoutY="287.0" mnemonicParsing="false" onAction="#onHighestPayingCustomerInSpecifiedCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Highest paying customer in specified category" />
+            <Button layoutX="23.0" layoutY="329.0" mnemonicParsing="false" onAction="#onDisplayClientsWithDebtClick" prefHeight="31.0" prefWidth="571.0" text="Display clients with debt" />
+            <Button layoutX="23.0" layoutY="370.0" mnemonicParsing="false" onAction="#onGetDataOnMostBoughtProductInCategoryBasedOnAgeClick" prefHeight="31.0" prefWidth="571.0" text="Get data on most bought product in category based on age" />
+            <Button layoutX="23.0" layoutY="412.0" mnemonicParsing="false" onAction="#onGetMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Highest, lowest and average price products in category" />
+            <Button layoutX="23.0" layoutY="455.0" mnemonicParsing="false" onAction="#onClientsThatBoughtHighestNumberOfProductsInCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Clients that bought highest number of products in category" />
          </children>
     </AnchorPane>
   </children>

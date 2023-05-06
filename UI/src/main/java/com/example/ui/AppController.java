@@ -13,11 +13,6 @@ import java.util.ResourceBundle;
 
 public class AppController implements Initializable {
 
-    private ResponseApi api = new ResponseApi();
-
-    @FXML
-    private Label label;
-
     @FXML
     private ChoiceBox<String> checkCategory;
 
