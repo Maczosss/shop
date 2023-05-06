@@ -7,11 +7,12 @@ import org.application.model.Product;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface ClientRepository {
-    Client getHighestPayingClient();
+    Optional<Client> getHighestPayingClient();
 
-    Client getHighestPayingClientInCategory(Category category);
+    Optional<Client> getHighestPayingClientInCategory(Category category);
 
     Map<Client, BigDecimal> checkClientsDebt();
 

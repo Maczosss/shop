@@ -11,7 +11,7 @@ import org.application.api.ResponseApi;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class HelloController implements Initializable {
+public class AppController implements Initializable {
 
     private ResponseApi api = new ResponseApi();
 
@@ -26,14 +26,29 @@ public class HelloController implements Initializable {
 
     @FXML
     protected void onHighestPayingCustomerClick() {
+        resultArea.setText(ResponseApi.getHighestPayingCustomer());
+    }
+    @FXML
+    protected void onHighestPayingCustomerInSpecifiedCategoryClick(ActionEvent event){
+        resultArea.setText(ResponseApi.getHighestPayingClientInCategory(getItem(event)));
+    }
 
+    @FXML
+    protected void onDisplayClientsWithDebtClick(){
         resultArea.setText(ResponseApi.checkClientsDebt());
     }
     @FXML
-    protected void onHighestPayingCustomerInCategoryClick(ActionEvent event){
+    protected void onGetDataOnMostBoughtProductInCategoryBasedOnAgeClick(){
+        resultArea.setText(ResponseApi.getMostBoughtProductCategoryBasedOnAge());
+    }
+    @FXML
+    protected void onGetMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategoryClick(ActionEvent event){
         resultArea.setText(ResponseApi.getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(getItem(event)));
-        }
-
+    }
+    @FXML
+    protected void onClientsThatBoughtHighestNumberOfProductsInCategoryClick(){
+        resultArea.setText(ResponseApi.getClientsThatBoughtTheMostProductsBasedOnCategory());
+    }
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         resultArea.setWrapText(true);
@@ -46,9 +61,4 @@ public class HelloController implements Initializable {
     public String getItem(ActionEvent event){
         return checkCategory.getValue();
     }
-
-//    @FXML
-//    protected void onTestButtonClick(){
-//        ResponseApi api = null;
-//    }
 }

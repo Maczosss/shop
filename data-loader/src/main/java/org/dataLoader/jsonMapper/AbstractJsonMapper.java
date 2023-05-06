@@ -12,11 +12,7 @@ public class AbstractJsonMapper<T>{
     private Class<T> entityType;
     private Moshi moshi = new Moshi.Builder().build();
     private JsonAdapter<T> entityAdapter;
-
     private JsonAdapter<List<T>> jsonListEntityAdapter;
-
-
-
 
     public AbstractJsonMapper(Class<T> entityType) {
         this.entityType = entityType;

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="484.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.ui.AppController">
+  <children>
+    <MenuBar VBox.vgrow="NEVER">
+      <menus>
+        <Menu mnemonicParsing="false" text="File">
+          <items>
+            <MenuItem mnemonicParsing="false" text="New" />
+            <MenuItem mnemonicParsing="false" text="Open…" />
+            <Menu mnemonicParsing="false" text="Open Recent" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" text="Close" />
+            <MenuItem mnemonicParsing="false" text="Save" />
+            <MenuItem mnemonicParsing="false" text="Save As…" />
+            <MenuItem mnemonicParsing="false" text="Revert" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" text="Preferences…" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" text="Quit" />
+          </items>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Edit">
+          <items>
+            <MenuItem mnemonicParsing="false" text="Undo" />
+            <MenuItem mnemonicParsing="false" text="Redo" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" text="Cut" />
+            <MenuItem mnemonicParsing="false" text="Copy" />
+            <MenuItem mnemonicParsing="false" text="Paste" />
+            <MenuItem mnemonicParsing="false" text="Delete" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" text="Select All" />
+            <MenuItem mnemonicParsing="false" text="Unselect All" />
+          </items>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Help">
+          <items>
+            <MenuItem mnemonicParsing="false" text="About MyHelloApp" />
+          </items>
+        </Menu>
+      </menus>
+    </MenuBar>
+    <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="529.0" prefWidth="640.0" VBox.vgrow="ALWAYS">
+         <children>
+            <TextArea layoutX="23.0" layoutY="27.0" prefHeight="150.0" prefWidth="369.0" fx:id="resultArea"/>
+            <ChoiceBox layoutX="440.0" layoutY="27.0" prefWidth="150.0" fx:id="checkCategory"/>
+            <Button layoutX="23.0" layoutY="188.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
+                    text="Highest paying customer"
+                    onAction="#onHighestPayingCustomerClick"/>
+            <Button layoutX="23.0" layoutY="232.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
+                    text="Highest paying customer in specified category"
+                    onAction="#onHighestPayingCustomerInSpecifiedCategoryClick"/>
+            <Button layoutX="23.0" layoutY="276.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
+                    text="Display clients with debt"
+                    onAction="#onDisplayClientsWithDebtClick"/>
+            <Button layoutX="23.0" layoutY="317.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
+                    text="Get data on most bought product in category based on age"
+                    onAction="#onGetDataOnMostBoughtProductInCategoryBasedOnAgeClick"/>
+            <Button layoutX="23.0" layoutY="360.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
+                    text="Highest, lowest and average price products in category"
+                    onAction="#onGetMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategoryClick"/>
+            <Button layoutX="23.0" layoutY="407.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="369.0"
+                    text="Clients that bought highest number of products in category"
+                    onAction="#onClientsThatBoughtHighestNumberOfProductsInCategoryClick"/>
+         </children>
+    </AnchorPane>
+  </children>
+</VBox>

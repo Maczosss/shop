@@ -13,6 +13,7 @@ import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -28,7 +29,7 @@ public class ClientRepositoryImpl
     }
 
     @Override
-    public Client getHighestPayingClient() {
+    public Optional<Client> getHighestPayingClient() {
         var sql = """
                 SELECT c.firstName, c.lastName, SUM(p.price) AS total_order_value
                 FROM clients c
@@ -42,12 +43,12 @@ public class ClientRepositoryImpl
         return jdbi.withHandle(handle -> handle
                 .createQuery(sql)
                 .mapToBean(Client.class)
-                .first()
+                .findFirst()
         );
     }
 
     @Override
-    public Client getHighestPayingClientInCategory(Category category) {
+    public Optional<Client> getHighestPayingClientInCategory(Category category) {
 
         var sql = """
                 SELECT c.firstName, c.lastName, SUM(p.price) AS total_order_value
@@ -63,7 +64,7 @@ public class ClientRepositoryImpl
         return jdbi.withHandle(handle -> handle
                 .createQuery(sql)
                 .mapToBean(Client.class)
-                .first()
+                .findFirst()
         );
 
     }
@@ -93,13 +94,6 @@ public class ClientRepositoryImpl
                             .createQuery(sql)
                             .mapTo(ClientDebtMapper.class)
                             .list());
-            for (ClientDebtMapper client : clientsWithDebt.get()) {
-                System.out.printf(
-                        "%s %s, has debt %s%n", client.getCLient().getFirstName(),
-                        client.getCLient().getLastName(),
-                        client.getDebt()
-                );
-            }
         }
         return clientsWithDebt
                 .get()
@@ -204,25 +198,39 @@ public class ClientRepositoryImpl
                     handle
                             .createQuery(lowestPriceSql)
                             .mapToBean(Product.class)
-                            .first();
+                            .findFirst()
+                            .orElse(null);
             var highestPrice =
                     handle
                             .createQuery(highestPriceSql)
                             .mapToBean(Product.class)
-                            .first();
+                            .findFirst()
+                            .orElse(null);
 
             var avg = handle
                     .createQuery(avrPriceSql)
                     .mapTo(String.class)
-                    .findOne();
+                    .findFirst()
+                    .orElse("-1");
+
+            var tempValue = new BigDecimal(avg)
+                    .setScale(2, RoundingMode.HALF_UP);
 
             minMaxAverageOfProductsInCategory.set(Map.of(
                     "Lowest value Product",
-                    Map.of(lowestPrice.getPrice().toString(), lowestPrice),
+                    Map.of(
+                            lowestPrice!=null?lowestPrice.getPrice().toString()
+                                    :"Didn't found instance",
+                            lowestPrice!=null?lowestPrice: Product.builder().build()),
                     "Highest value Product",
-                    Map.of(highestPrice.getPrice().toString(), highestPrice),
+                    Map.of(
+                            highestPrice!=null?highestPrice.getPrice().toString()
+                                    :"Didn't found instance",
+                            highestPrice!=null?highestPrice: Product.builder().build()),
                     "Average price of products in category %s".formatted(category.getName()),
-                    Map.of(avg.orElse("Error occurred while mapping average value")
+                    Map.of(
+                            tempValue.compareTo(BigDecimal.ZERO) != -1 ? tempValue.toString()
+                                    : "Error occurred while mapping average value"
                             , new Product())
 
             ));
@@ -250,51 +258,53 @@ public class ClientRepositoryImpl
                 """;
 
         //todo zapytać czy jest to poprawne?
-        var resultsMap= new AtomicReference<Map<Category, List<Client>>>(Map.of());
+        var resultsMap = new AtomicReference<Map<Category, List<Client>>>(Map.of());
 
         try (Handle handle = jdbi.open()) {
             handle.createQuery(sql)
                     .map((r, ctx) -> {
-                        var result = new Object() {
+                                var result = new Object() {
 
-                            public String category = r.getString("category");
-                            public String firstName = r.getString("firstName");
-                            public String lastName = r.getString("lastName");
+                                    public String category = r.getString("category");
+                                    public String firstName = r.getString("firstName");
+                                    public String lastName = r.getString("lastName");
 
-                            public Category getCategory(){
-                                return Arrays.stream(Category.values())
-                                        .filter((c)-> c.getName().equals(category)).findAny().get();
+                                    public Client getClient() {
+                                        return Client
+                                                .builder()
+                                                .id(0L)
+                                                .firstName(firstName)
+                                                .lastName(lastName)
+                                                .age(0)
+                                                .cash(0f)
+                                                .build();
+//                                                new Client(0L, firstName, lastName, 0, 0f);
+                                    }
+
+                                };
+                                //complicated logic but there is possibility that there are more than one client,
+                                //that bought highest number of products from category
+                                //so this instance needs to be resolved,
+                                // with multiple clients in list assigned to one category key in the map
+                                if (resultsMap.get()
+                                        .keySet()
+                                        .stream()
+                                        .anyMatch((element) -> element.getName().equals(result.category))) {
+                                    var tempMap = resultsMap.get();
+                                    tempMap.get(Category.getCategory(result.category)).add(result.getClient());
+                                    resultsMap.set(tempMap);
+                                } else {
+                                    var currentCategory = Category.getCategory(result.category);
+                                    var tempMap = new HashMap<>(resultsMap.get());
+                                    tempMap.put(currentCategory, new LinkedList<>());
+                                    tempMap.get(currentCategory).add(result.getClient());
+                                    resultsMap.set(tempMap);
+                                }
+                                return result;
                             }
-                          public Client getClient(){
-                                return new Client(0L,firstName, lastName,0,0f);
-                          }
-
-                        };
-                        //complicated logic but there is possibility that there are more than one client,
-                        //that bought highest number of products from category
-                        //so this instance needs to be resolved,
-                        // with multiple clients in list assigned to one category key in the map
-                        if(resultsMap.get()
-                                .keySet()
-                                .stream()
-                                .anyMatch((element)->element.getName().equals(result.category))){
-                            var tempMap = resultsMap.get();
-                            tempMap.get(Category.getCategory(result.category)).add(result.getClient());
-                            resultsMap.set(tempMap);
-                        }
-                        else{
-                            var currentCategory = Category.getCategory(result.category);
-                            var tempMap = new HashMap<>(resultsMap.get());
-                            tempMap.put(currentCategory, new LinkedList<>());
-                            tempMap.get(currentCategory).add(result.getClient());
-                            resultsMap.set(tempMap);
-                        }
-                        return result;
-                    }
                     ).collect(Collectors.toList());
-
         }
-    return resultsMap.get();
+        return resultsMap.get();
     }
 }
 
@@ -321,17 +331,11 @@ class AgeHistogramMapper implements RowMapper<AgeHistogramMapper> {
 }
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 class ClientDebtMapper implements RowMapper<ClientDebtMapper> {
     private Client cLient;
     private BigDecimal debt;
-
-    public ClientDebtMapper() {
-    }
-
-    public ClientDebtMapper(Client cLient, BigDecimal debt) {
-        this.cLient = cLient;
-        this.debt = debt;
-    }
 
     @Override
     public ClientDebtMapper map(ResultSet rs, StatementContext ctx) throws SQLException {

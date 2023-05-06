@@ -1,27 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
+
 <VBox alignment="BASELINE_LEFT" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.example.ui.HelloController">
-  <padding>
-    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-  </padding>
+    <AnchorPane>
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+        </padding>
 
-  <ChoiceBox fx:id="checkCategory"/>
-  <Label fx:id="welcomeText"/>
-  <Button text="Show highest paying customer" onAction="#onHighestPayingCustomerClick"/>
-  <Button text="Show highest paying customer in provided category. Select from dropdown." onAction="#onHighestPayingCustomerInCategoryClick"/>
-<!--  <Label fx:id="showSalesByAge"/>-->
-<!--  <Button text="Hello!" onAction="#onHelloButtonClick"/>-->
-<!--  <Label fx:id="showAvgPriceOfCategoryOfProducts"/>-->
-<!--  <Button text="Hello!" onAction="#onHelloButtonClick"/>-->
-<!--  <Label fx:id="showHighestPriceOfCategoryOfProducts"/>-->
-<!--  <Button text="Hello!" onAction="#onHelloButtonClick"/>-->
-<!--  <Label fx:id="showLowestPriceOfCategoryOfProducts"/>-->
-<!--  <Button text="Hello!" onAction="#onHelloButtonClick"/>-->
+
+        <TextArea fx:id="resultArea"/>
+        <ChoiceBox fx:id="checkCategory"/>
+        <Button text="Show highest paying customer" onAction="#onHighestPayingCustomerClick"/>
+        <Button text="Show highest paying customer in provided category. Select from dropdown."
+                onAction="#onHighestPayingCustomerInCategoryClick"/>
+    </AnchorPane>
 </VBox>

@@ -6,6 +6,7 @@ import org.application.model.Product;
 import org.application.repository.ClientRepository;
 import org.application.repository.ClientRepositoryImpl;
 import org.application.repository.DataSource;
+import org.application.repository.JsonClientRepositoryImpl;
 import org.dataLoader.DatabaseConnection;
 
 import java.io.FileInputStream;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class ClientService {
 
@@ -34,28 +36,124 @@ public class ClientService {
         }
     }
     //done
-    public Client getHighestPayingCustomer(){
-        return clientRepository.getHighestPayingClient();
+    public String getHighestPayingCustomer(){
+        var client = clientRepository.getHighestPayingClient().orElse(null);
+        if(client==null){
+            return noData();
+        }
+        return "Highest paying customer is: %s %s".formatted(client.getFirstName(), client.getLastName());
     }
 
     //done
-    public Map<Client, BigDecimal> checkClientsDebt(){
-        return clientRepository.checkClientsDebt();
+    public String checkClientsDebt(){
+        var debtMap = clientRepository.checkClientsDebt();
+        if(debtMap==null){
+            return noData();
+        }
+        if(debtMap.size()>0) {
+            return "Clients with debt to pay: \n%s".formatted(debtMap.entrySet().stream()
+                    .map(entry -> "%s %s, with id: %s, has debt: %s.\n".formatted(entry.getKey().getFirstName(), entry.getKey().getLastName(), entry.getKey().getId(), entry.getValue()))
+                    .collect(Collectors.joining("")));
+        }
+        else{
+            return "There are no clients with any debt at the moment";
+        }
     }
     //done
-    public Client getHighestPayingClientInCategory(Category category){
-        return clientRepository.getHighestPayingClientInCategory(category);
+    public String getHighestPayingClientInCategory(String category){
+        try {
+            var tempCategory = Category.getCategory(category);
+            var client = clientRepository.getHighestPayingClientInCategory(tempCategory).orElse(null);
+            if(client==null){
+                return noData();
+            }
+            return "Highest paying customer in category %s is %s %s".formatted(category, client.getFirstName(), client.getLastName());
+        }catch(IllegalArgumentException e){
+            //todo add logging
+            return e.getMessage();
+        }
     }
     //done
-    public Map<Integer, String> getMostBoughtProductCategoryBasedOnAge(){
-        return clientRepository.getMostBoughtProductCategoryBasedOnAge();
+    public String getMostBoughtProductCategoryBasedOnAge(){
+        var ageProductMap = clientRepository.getMostBoughtProductCategoryBasedOnAge();
+        if(ageProductMap==null){
+            return noData();
+        }
+        if(ageProductMap.size()>0) {
+            return "Most bought product category based on age: \n%s"
+                    .formatted(
+                            ageProductMap.entrySet().stream()
+                                    .map(entry -> "in age group: %s, most bought category was: %s.\n".formatted(
+                                            entry.getKey(), entry.getValue()))
+                                    .collect(Collectors.joining("")));
+        }
+        else{
+            return "No info on age groups was provided.";
+        }
     }
-    public Map<Category, List<Client>> getClientsThatBoughtTheMostProductsBasedOnCategory(){
-        return clientRepository.getClientsThatBoughtTheMostProductsBasedOnCategory();
+    public String getClientsThatBoughtTheMostProductsBasedOnCategory(){
+        var mostBoughtCategoryBasedOnProducts =
+                clientRepository.getClientsThatBoughtTheMostProductsBasedOnCategory();
+        if(mostBoughtCategoryBasedOnProducts==null){
+            return noData();
+        }
+        if(mostBoughtCategoryBasedOnProducts.size()>0) {
+            return "Clients that bought most products in category: \n%s"
+                    .formatted(
+                            mostBoughtCategoryBasedOnProducts.entrySet().stream()
+                                    .map(entry -> "in category: %s, %s bought highest number of products.\n"
+                                            .formatted(
+                                            entry.getKey().getName(), entry.getValue()
+                                                            .stream().map((client)-> "%s %s"
+                                                                    .formatted(
+                                                                            client.getFirstName(),
+                                                                            client.getLastName()
+                                                                    ))
+                                                            .collect(Collectors.joining(" and "))
+                                                    ))
+                                    .collect(Collectors.joining("")));
+        }
+        else{
+            return "No info on age groups was provided.";
+        }
     }
 
-    public Map<String,Map<String, Product>> getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(Category category){
-        return clientRepository.getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(category);
+    public String getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(String category){
+        try {
+            var tempCategory = Category.getCategory(category);
+            var productStatisticMap =
+                    clientRepository
+                            .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(tempCategory);
+            if(productStatisticMap==null){
+                return noData();
+            }
+            if(productStatisticMap.size()>0) {
+
+                return "For category %s:\n%s"
+                        .formatted(category, productStatisticMap.entrySet().stream()
+                                .map(
+                                        entry->{
+                                            return "%s, %s\n".formatted(entry.getKey(),
+                                                    entry.getValue().entrySet().stream()
+                                                            .map(valueEntry->{
+                                                                if(valueEntry.getValue().getName()!=null){
+                                                                    return "%s with value %s ".formatted(
+                                                                            valueEntry.getValue().getName(),
+                                                                            valueEntry.getKey());
+                                                                }else{
+                                                                    return valueEntry.getKey();
+                                                                }
+                                                            }).collect(Collectors.joining())
+                                            );
+                                        }
+                                ).collect(Collectors.joining()));
+            }else{
+                return "No data on product statistics fetched.";
+            }
+        }catch(IllegalArgumentException e){
+            //todo add logging
+            return e.getMessage();
+        }
     }
     private void createDatabaseRepository(Properties appProperties) {
         clientRepository = new ClientRepositoryImpl(DatabaseConnection.create(appProperties));
@@ -64,6 +162,9 @@ public class ClientService {
     }
 
     private void createJsonFileRepository() {
-
+        clientRepository = new JsonClientRepositoryImpl(Client.class);
+    }
+    private String noData(){
+        return "No data was returned from data source.";
     }
 }
