@@ -41,11 +41,26 @@ public class Client{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Client client = (Client) o;
-        return Objects.equals(firstName, client.firstName) && Objects.equals(lastName, client.lastName) && Objects.equals(age, client.age) && Objects.equals(cash, client.cash);
+        return Objects.equals(id, client.id) && Objects.equals(firstName, client.firstName) && Objects.equals(lastName, client.lastName) && Objects.equals(age, client.age) && Objects.equals(cash, client.cash);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(firstName, lastName, age, cash);
+        return Objects.hash(id, firstName, lastName, age, cash);
     }
+
+    //todo check if only need is id for checking equals
+
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//        Client client = (Client) o;
+//        return Objects.equals(firstName, client.firstName) && Objects.equals(lastName, client.lastName) && Objects.equals(age, client.age) && Objects.equals(cash, client.cash);
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        return Objects.hash(firstName, lastName, age, cash);
+//    }
 }

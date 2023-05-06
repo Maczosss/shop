@@ -9,6 +9,7 @@ module data.loader {
     exports org.dataLoader;
     exports org.dataLoader.fileMapper;
     exports org.dataLoader.databaseMapper;
+    exports org.dataLoader.jsonMapper;
 }
 
 /*

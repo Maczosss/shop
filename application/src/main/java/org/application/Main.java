@@ -7,20 +7,23 @@ import org.application.service.ClientService;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Optional;
 import java.util.Properties;
 
 public class Main {
     public static void main(String[] args) {
 
         //properties download
-        Properties appProperties = new Properties();
-        try {
-            appProperties
-                    .load(new FileInputStream("PATH_TO_PROPERTIES"));
-        } catch (IOException e) {
-//            throw new RuntimeException(e);
-            System.out.println("well");
-        }
+//        Properties appProperties = new Properties();
+//        try {
+//            appProperties
+//                    .load(new FileInputStream("PATH_TO_PROPERTIES"));
+//        } catch (IOException e) {
+////            throw new RuntimeException(e);
+//            System.out.println("well");
+//        }
         //end of properties
 
 //        DataProviderService.createDatabaseEntries(appProperties);
@@ -30,10 +33,15 @@ public class Main {
 //                .getHighestPayingClientInCategory(Category.COMPUTER));
 //        System.out.println(new ClientService(DataSource.DATABASE)
 //                .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(Category.COMPUTER));
-        System.out.println(new ClientService(DataSource.DATABASE)
-                .getClientsThatBoughtTheMostProductsBasedOnCategory());
+//        System.out.println(new ClientService(DataSource.DATABASE)
+//                .getClientsThatBoughtTheMostProductsBasedOnCategory());
 
 
+       var test = new ClientService(DataSource.DATABASE)
+//               .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory("computer");
+//        .checkClientsDebt();
+               .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory("graphics card");
 
+        System.out.println(test);
     }
 }
