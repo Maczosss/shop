@@ -16,14 +16,14 @@ public class Main {
     public static void main(String[] args) {
 
         //properties download
-//        Properties appProperties = new Properties();
-//        try {
-//            appProperties
-//                    .load(new FileInputStream("PATH_TO_PROPERTIES"));
-//        } catch (IOException e) {
-////            throw new RuntimeException(e);
-//            System.out.println("well");
-//        }
+        Properties appProperties = new Properties();
+        try {
+            appProperties
+                    .load(new FileInputStream("PATH_TO_PROPERTIES"));
+        } catch (IOException e) {
+//            throw new RuntimeException(e);
+            System.out.println("well");
+        }
         //end of properties
 
 //        DataProviderService.createDatabaseEntries(appProperties);
@@ -33,15 +33,21 @@ public class Main {
 //                .getHighestPayingClientInCategory(Category.COMPUTER));
 //        System.out.println(new ClientService(DataSource.DATABASE)
 //                .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(Category.COMPUTER));
-//        System.out.println(new ClientService(DataSource.DATABASE)
-//                .getClientsThatBoughtTheMostProductsBasedOnCategory());
+//        var result = new ClientService(DataSource.DATABASE)
+//                .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(Category.COMPUTER.getName());
+//
+//        System.out.println(result);
 
 
-       var test = new ClientService(DataSource.DATABASE)
+//       var test = new ClientService(DataSource.DATABASE)
 //               .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory("computer");
 //        .checkClientsDebt();
-               .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory("graphics card");
+//               .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory("graphics card");
 
-        System.out.println(test);
+//        System.out.println(test);
+
+        var result = new ClientService(DataSource.JSON_FILE)
+                .getClientsThatBoughtTheMostProductsBasedOnCategory();
+        System.out.println(result);
     }
 }

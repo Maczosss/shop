@@ -165,13 +165,20 @@ public class DataProviderService {
        orderReposiory = new OrderRepositoryImpl(jdbi);
 
 
-        System.out.println(clientRepository.saveAll(clients));
-
+//        System.out.println(clientRepository.saveAll(clients));
+//
 //        System.out.println(productRepository.saveAll(products));
 
-        System.out.println(orderReposiory.saveAllOrders(createRandomOrders(
+        var orders = createRandomOrders(
                 10,
-                3)));
+                3);
+
+//        System.out.println(orderReposiory.saveAllOrders(orders));
+        var jsonRepo = new JsonOrderRepositoryImpl(
+                Order.class, appProperties.getProperty("jsonFileLocation"));
+        jsonRepo.saveAllOrders(orders);
+
+//        System.out.println(jsonRepo.getData());
 
 
         var test = clientRepository.getByFields(List.of(

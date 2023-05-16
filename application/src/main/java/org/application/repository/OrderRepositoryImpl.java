@@ -1,40 +1,32 @@
 package org.application.repository;
 
-import com.mysql.cj.xdevapi.Client;
 import org.dataLoader.databaseMapper.AbstractCrudRepository;
 import org.application.model.Order;
 import org.application.model.Product;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import java.util.List;
-import java.util.Map;
-
 
 public class OrderRepositoryImpl
         extends AbstractCrudRepository<Order, Long>
-        implements OrderRepository{
+        implements OrderRepository<Order,Long>{
 
     public OrderRepositoryImpl(Jdbi jdbi){
         super(jdbi);
     }
 
     @Override
-    public Map<Client, Map<Product, Integer>> getData() {
+    public Order saveOrder(Order orderToSave) {
+        //todo add this logic
         return null;
     }
 
     @Override
-    public Order saveOrder(Object orderToSave) {
-        return null;
-    }
-
-    @Override
-    public List<Order> saveAllOrders(List ordersToSave) {
-        var orders = (List<Order>) ordersToSave;
+    public List<Order> saveAllOrders(List<Order> ordersToSave) {
 
         try(Handle handle = jdbi.open()){
             handle.begin();
-            for(Order order: orders){
+            for(Order order: ordersToSave){
                 var orderId = handle.createUpdate("insert into %s %s values %s;".formatted(
                     super.getTableName(),
                     "( %s, %s )".formatted(
@@ -65,6 +57,6 @@ public class OrderRepositoryImpl
             System.out.println("Error while creating orders table" +  e.getMessage());
             throw new RuntimeException("Error while creating orders table", e);
         }
-        return orders;
+        return (List<Order>) ordersToSave;
     }
 }
