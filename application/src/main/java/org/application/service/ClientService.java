@@ -1,170 +1,196 @@
 package org.application.service;
 
 import org.application.model.Category;
-import org.application.model.Client;
-import org.application.model.Product;
-import org.application.repository.ClientRepository;
-import org.application.repository.ClientRepositoryImpl;
-import org.application.repository.DataSource;
-import org.application.repository.JsonClientRepositoryImpl;
+import org.application.model.Order;
+import org.application.repository.*;
+import org.application.settings.AppProperties;
 import org.dataLoader.DatabaseConnection;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class ClientService {
 
-    private ClientRepository clientRepository;
-    public ClientService(DataSource source){
-        var appProperties = new Properties();
-        try {
-            appProperties
-                    .load(new FileInputStream("PATH_TO_PROPERTIES"));
-        } catch (IOException e) {
-//            throw new RuntimeException(e);
-            System.out.println("well");
-        }
-        switch(source){
-            case DATABASE -> createDatabaseRepository(appProperties);
+    private BusinessRequirements businessRequrementsRepository;
+
+    public ClientService(BusinessRequirements repository) {
+        this.businessRequrementsRepository = repository;
+    }
+
+    public ClientService(DataSource source) {
+        switch (source) {
+            case DATABASE -> createDatabaseRepository();
             case TXT_FILE -> createTextFileRepository();//todo add repository
-            case JSON_FILE -> createJsonFileRepository();//todo add repository
+            case JSON_FILE, EMPTY -> createJsonFileRepository();
         }
     }
+
+
+
     //done
-    public String getHighestPayingCustomer(){
-        var client = clientRepository.getHighestPayingClient().orElse(null);
-        if(client==null){
+    public String getHighestPayingCustomer() {
+        var client = businessRequrementsRepository.getHighestPayingClient().orElse(null);
+        if (client == null) {
             return noData();
         }
         return "Highest paying customer is: %s %s".formatted(client.getFirstName(), client.getLastName());
     }
 
     //done
-    public String checkClientsDebt(){
-        var debtMap = clientRepository.checkClientsDebt();
-        if(debtMap==null){
+    public String checkClientsDebt() {
+        var debtMap = businessRequrementsRepository.checkClientsDebt();
+        if (debtMap == null) {
             return noData();
         }
-        if(debtMap.size()>0) {
+        if (debtMap.size() > 0) {
             return "Clients with debt to pay: \n%s".formatted(debtMap.entrySet().stream()
+                    .filter(e-> e.getValue()!=null && e.getKey()!=null)
+                    .filter(debt -> debt.getValue().compareTo(BigDecimal.ZERO) != (-1))
                     .map(entry -> "%s %s, with id: %s, has debt: %s.\n".formatted(entry.getKey().getFirstName(), entry.getKey().getLastName(), entry.getKey().getId(), entry.getValue()))
                     .collect(Collectors.joining("")));
-        }
-        else{
+        } else {
             return "There are no clients with any debt at the moment";
         }
     }
+
     //done
-    public String getHighestPayingClientInCategory(String category){
+    public String getHighestPayingClientInCategory(String category) {
         try {
             var tempCategory = Category.getCategory(category);
-            var client = clientRepository.getHighestPayingClientInCategory(tempCategory).orElse(null);
-            if(client==null){
+            var client = businessRequrementsRepository.getHighestPayingClientInCategory(tempCategory).orElse(null);
+            if (client == null || (client.getFirstName()==null || client.getLastName()==null)) {
                 return noData();
             }
             return "Highest paying customer in category %s is %s %s".formatted(category, client.getFirstName(), client.getLastName());
-        }catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             //todo add logging
             return e.getMessage();
         }
     }
+
     //done
-    public String getMostBoughtProductCategoryBasedOnAge(){
-        var ageProductMap = clientRepository.getMostBoughtProductCategoryBasedOnAge();
-        if(ageProductMap==null){
+    public String getMostBoughtProductCategoryBasedOnAge() {
+        var ageProductMap = businessRequrementsRepository.getMostBoughtProductCategoryBasedOnAge();
+        if (ageProductMap == null) {
             return noData();
         }
-        if(ageProductMap.size()>0) {
+        if (ageProductMap.size() > 0) {
             return "Most bought product category based on age: \n%s"
                     .formatted(
                             ageProductMap.entrySet().stream()
+                                    .filter(entryTest ->
+                                            entryTest.getKey()!=null &&
+                                                    entryTest.getKey()>0 &&
+                                                    entryTest.getValue()!=null &&
+                                                    !entryTest.getValue().equals(""))
                                     .map(entry -> "in age group: %s, most bought category was: %s.\n".formatted(
                                             entry.getKey(), entry.getValue()))
                                     .collect(Collectors.joining("")));
-        }
-        else{
+        } else {
             return "No info on age groups was provided.";
         }
     }
-    public String getClientsThatBoughtTheMostProductsBasedOnCategory(){
+
+    public String getClientsThatBoughtTheMostProductsBasedOnCategory() {
         var mostBoughtCategoryBasedOnProducts =
-                clientRepository.getClientsThatBoughtTheMostProductsBasedOnCategory();
-        if(mostBoughtCategoryBasedOnProducts==null){
+                businessRequrementsRepository.getClientsThatBoughtTheMostProductsBasedOnCategory();
+        if (mostBoughtCategoryBasedOnProducts == null) {
             return noData();
         }
-        if(mostBoughtCategoryBasedOnProducts.size()>0) {
+        if (mostBoughtCategoryBasedOnProducts.size() > 0) {
             return "Clients that bought most products in category: \n%s"
                     .formatted(
                             mostBoughtCategoryBasedOnProducts.entrySet().stream()
+                                    .filter(entryTest ->
+                                            entryTest.getKey()!=null &&
+                                            entryTest.getValue() !=null
+                                            )
                                     .map(entry -> "in category: %s, %s bought highest number of products.\n"
                                             .formatted(
-                                            entry.getKey().getName(), entry.getValue()
-                                                            .stream().map((client)-> "%s %s"
+                                                    entry.getKey().getName(), entry.getValue()
+                                                            .stream()
+                                                            .filter(clientTest ->
+                                                                    clientTest!=null &&
+                                                                    clientTest.getFirstName()!=null &&
+                                                                    clientTest.getLastName()!=null &&
+                                                                    !clientTest.getFirstName().equals("") &&
+                                                                    !clientTest.getLastName().equals(""))
+                                                            .map((client) -> "%s %s"
                                                                     .formatted(
                                                                             client.getFirstName(),
                                                                             client.getLastName()
                                                                     ))
                                                             .collect(Collectors.joining(" and "))
-                                                    ))
+                                            ))
                                     .collect(Collectors.joining("")));
-        }
-        else{
+        } else {
             return "No info on age groups was provided.";
         }
     }
 
-    public String getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(String category){
+    public String getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(String category) {
         try {
             var tempCategory = Category.getCategory(category);
             var productStatisticMap =
-                    clientRepository
+                    businessRequrementsRepository
                             .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(tempCategory);
-            if(productStatisticMap==null){
+            if (productStatisticMap == null) {
                 return noData();
             }
-            if(productStatisticMap.size()>0) {
+            if (productStatisticMap.size() > 0) {
 
                 return "For category %s:\n%s"
                         .formatted(category, productStatisticMap.entrySet().stream()
                                 .map(
-                                        entry->{
+                                        entry -> {
                                             return "%s, %s\n".formatted(entry.getKey(),
                                                     entry.getValue().entrySet().stream()
-                                                            .map(valueEntry->{
-                                                                if(valueEntry.getValue().getName()!=null){
+                                                            .filter(entryTest -> entryTest.getValue()!=null)
+                                                            .map(valueEntry -> {
+                                                                if (valueEntry.getValue().getName() != null) {
                                                                     return "%s with value %s ".formatted(
                                                                             valueEntry.getValue().getName(),
                                                                             valueEntry.getKey());
-                                                                }else{
+                                                                } else {
                                                                     return valueEntry.getKey();
                                                                 }
                                                             }).collect(Collectors.joining())
                                             );
                                         }
                                 ).collect(Collectors.joining()));
-            }else{
+            } else {
                 return "No data on product statistics fetched.";
             }
-        }catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             //todo add logging
             return e.getMessage();
         }
     }
-    private void createDatabaseRepository(Properties appProperties) {
-        clientRepository = new ClientRepositoryImpl(DatabaseConnection.create(appProperties));
+
+    private void createDatabaseRepository() {
+        if (AppProperties
+                .getInstance()
+                .getAppProperties()!=null &&
+                AppProperties
+                .getInstance()
+                .getAppProperties()
+                .size() > 0) {
+            businessRequrementsRepository = new ClientRepositoryImpl(DatabaseConnection.create(AppProperties
+                    .getInstance()
+                    .getAppProperties()));
+        }
     }
+
     private void createTextFileRepository() {
     }
 
     private void createJsonFileRepository() {
-        clientRepository = new JsonClientRepositoryImpl(Client.class);
+        businessRequrementsRepository = new JsonOrderRepositoryImpl(Order.class, AppProperties
+                .getInstance()
+                .getAppProperties().getProperty("jsonFileLocation"));
     }
-    private String noData(){
+
+    private String noData() {
         return "No data was returned from data source.";
     }
 }

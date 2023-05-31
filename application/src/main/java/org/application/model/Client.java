@@ -49,7 +49,7 @@ public class Client{
         return Objects.hash(id, firstName, lastName, age, cash);
     }
 
-    //todo check if only need is id for checking equals
+
 
 //    @Override
 //    public boolean equals(Object o) {

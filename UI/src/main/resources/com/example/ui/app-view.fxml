@@ -7,6 +7,7 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -52,16 +53,20 @@
       </menus>
     </MenuBar>
     <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="529.0" prefWidth="640.0" VBox.vgrow="ALWAYS">
-         <children>
-            <TextArea fx:id="resultArea" layoutX="23.0" layoutY="27.0" prefHeight="180.0" prefWidth="571.0" />
-            <ChoiceBox fx:id="checkCategory" layoutX="646.0" layoutY="27.0" prefWidth="150.0" />
-            <Button layoutX="23.0" layoutY="244.0" mnemonicParsing="false" onAction="#onHighestPayingCustomerClick" prefHeight="31.0" prefWidth="571.0" text="Highest paying customer" />
-            <Button layoutX="23.0" layoutY="287.0" mnemonicParsing="false" onAction="#onHighestPayingCustomerInSpecifiedCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Highest paying customer in specified category" />
-            <Button layoutX="23.0" layoutY="329.0" mnemonicParsing="false" onAction="#onDisplayClientsWithDebtClick" prefHeight="31.0" prefWidth="571.0" text="Display clients with debt" />
-            <Button layoutX="23.0" layoutY="370.0" mnemonicParsing="false" onAction="#onGetDataOnMostBoughtProductInCategoryBasedOnAgeClick" prefHeight="31.0" prefWidth="571.0" text="Get data on most bought product in category based on age" />
-            <Button layoutX="23.0" layoutY="412.0" mnemonicParsing="false" onAction="#onGetMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Highest, lowest and average price products in category" />
-            <Button layoutX="23.0" layoutY="455.0" mnemonicParsing="false" onAction="#onClientsThatBoughtHighestNumberOfProductsInCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Clients that bought highest number of products in category" />
-         </children>
+      <children>
+        <TextField fx:id="propertiesPath" layoutX="23.0" layoutY="14.0" prefHeight="25.0" prefWidth="571.0" promptText="path to your properties file" />
+        <TextArea fx:id="resultArea" layoutX="23.0" layoutY="41.0" prefHeight="180.0" prefWidth="571.0" />
+        <ChoiceBox fx:id="checkCategory" accessibleHelp="Category" accessibleText="Category" layoutX="646.0" layoutY="89.0" prefHeight="25.0" prefWidth="168.0" />
+        <Button layoutX="23.0" layoutY="244.0" mnemonicParsing="false" onAction="#onHighestPayingCustomerClick" prefHeight="31.0" prefWidth="571.0" text="Highest paying customer" />
+        <Button layoutX="23.0" layoutY="287.0" mnemonicParsing="false" onAction="#onHighestPayingCustomerInSpecifiedCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Highest paying customer in specified category" />
+        <Button layoutX="23.0" layoutY="329.0" mnemonicParsing="false" onAction="#onDisplayClientsWithDebtClick" prefHeight="31.0" prefWidth="571.0" text="Display clients with debt" />
+        <Button layoutX="23.0" layoutY="370.0" mnemonicParsing="false" onAction="#onGetDataOnMostBoughtProductInCategoryBasedOnAgeClick" prefHeight="31.0" prefWidth="571.0" text="Get data on most bought product in category based on age" />
+        <Button layoutX="23.0" layoutY="412.0" mnemonicParsing="false" onAction="#onGetMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Highest, lowest and average price products in category" />
+        <Button layoutX="23.0" layoutY="455.0" mnemonicParsing="false" onAction="#onClientsThatBoughtHighestNumberOfProductsInCategoryClick" prefHeight="31.0" prefWidth="571.0" text="Clients that bought highest number of products in category" />
+        <ChoiceBox fx:id="dataSource" accessibleHelp="Data-source" accessibleText="Data-source" layoutX="646.0" layoutY="131.0" prefHeight="25.0" prefWidth="168.0" />
+        <Button layoutX="646.0" layoutY="14.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="168.0" text="Initialize data" onAction="#initializeData" />
+        <Button layoutX="646.0" layoutY="50.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="168.0" text="set data-source connection" onAction="#setConnection"/>
+      </children>
     </AnchorPane>
   </children>
 </VBox>

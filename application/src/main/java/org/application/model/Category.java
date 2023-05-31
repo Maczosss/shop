@@ -1,6 +1,6 @@
 package org.application.model;
 
-public enum Category {
+public enum Category implements NamedEnum {
     COMPUTER("computer"),
     GRAPHICS_CARD("graphics card"),
     MOUSE("mouse"),
@@ -8,7 +8,8 @@ public enum Category {
     MOTHER_BOARD("mother board"),
     MONITOR("monitor"),
     MOUSE_PAD("mouse pad"),
-    SMARTWATCH("smartwatch");
+    SMARTWATCH("smartwatch"),
+    EMPTY("empty");
 
     private final String name;
 
@@ -19,12 +20,8 @@ public enum Category {
     public String getName() {
         return name;
     }
-    public static Category getCategory(String categoryName){
-        for (Category category : Category.values()) {
-            if (category.getName().equals(categoryName)) {
-                return category;
-            }
-        }
-        throw new IllegalArgumentException("Unknown category name: " + categoryName);
+    public static Category getCategory(String name){
+        var tempEnum = NamedEnum.getEnumByName(Category.class, name);
+        return tempEnum==null?Category.EMPTY:tempEnum;
     }
 }

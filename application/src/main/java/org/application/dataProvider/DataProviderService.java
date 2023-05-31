@@ -1,19 +1,23 @@
 package org.application.dataProvider;
 
+import org.apache.logging.log4j.LogManager;
 import org.application.model.Category;
 import org.application.repository.ClientRepositoryImpl;
 import org.application.repository.OrderRepositoryImpl;
 import org.application.repository.ProductRepositoryImpl;
+import org.application.settings.AppProperties;
 import org.dataLoader.DatabaseConnection;
-import org.dataLoader.databaseMapper.TempField;
 import org.dataLoader.fileMapper.AbstractFromFileMapper;
 import org.application.model.Client;
 import org.application.model.Order;
 import org.application.model.Product;
 import org.application.repository.*;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.result.ResultSetException;
 
 import java.util.*;
 import java.util.function.Function;
+
 
 public class DataProviderService {
 
@@ -25,6 +29,7 @@ public class DataProviderService {
                     .firstName("Maciej")
                     .lastName("Jaremowicz")
                     .age(25)
+//                    .cash(BigDecimal.valueOf(2000F))
                     .cash(2000F)
                     .build(),
             Client
@@ -32,6 +37,7 @@ public class DataProviderService {
                     .firstName("Andrzej")
                     .lastName("Kowalski")
                     .age(25)
+//                    .cash(BigDecimal.valueOf(1000000F))
                     .cash(1000000F)
                     .build(),
             Client
@@ -39,6 +45,7 @@ public class DataProviderService {
                     .firstName("Robert")
                     .lastName("Makłowicz")
                     .age(12)
+//                    .cash(BigDecimal.valueOf(200F))
                     .cash(200F)
                     .build(),
             Client
@@ -46,6 +53,7 @@ public class DataProviderService {
                     .firstName("Krzysztof")
                     .lastName("Kolump")
                     .age(33)
+//                    .cash(BigDecimal.valueOf(15000F))
                     .cash(15000F)
                     .build(),
             Client
@@ -53,6 +61,7 @@ public class DataProviderService {
                     .firstName("Roberto")
                     .lastName("Kowalski")
                     .age(45)
+//                    .cash(BigDecimal.valueOf(30000F))
                     .cash(30000F)
                     .build());
 
@@ -113,77 +122,111 @@ public class DataProviderService {
                     .build()
     );
 
-    public static void createDatabaseEntries(Properties appProperties){
-        var jdbi = DatabaseConnection.create(appProperties);
+    public static void createDatabaseEntries() {
+        var jdbi = DatabaseConnection.create(
+                AppProperties
+                        .getInstance()
+                        .getAppProperties());
+        //drop previous data and provide new records
+        if (DatabaseConnection.checkIfDbExists(AppProperties.getInstance().getAppProperties())) {
 
-        //TODO add creating shop database
+            dropTablesIfExist(jdbi);
 
-        var createClientTableSql = """
-                create table if not exists clients (
-                id integer primary key auto_increment,
-                firstName varchar(50) not null,
-                lastName varchar(50) not null,
-                age integer default 18,
-                cash integer default 0
-                );
-                """;
+            var createClientTableSql = """
+                    create table if not exists clients (
+                    id integer primary key auto_increment,
+                    firstName varchar(50) not null,
+                    lastName varchar(50) not null,
+                    age integer default 18,
+                    cash integer default 0
+                    );
+                    """;
 
-        var createProductTableSql = """
-                create table if not exists products (
-                id integer primary key auto_increment,
-                name varchar(50) not null,
-                category varchar(50) not null,
-                price integer default 0
-                );
-                """;
+            var createProductTableSql = """
+                    create table if not exists products (
+                    id integer primary key auto_increment,
+                    name varchar(50) not null,
+                    category varchar(50) not null,
+                    price integer default 0
+                    );
+                    """;
 
-        var createOrderTableSql = """
-                CREATE TABLE IF NOT EXISTS orders (
-                id integer primary key auto_increment,
-                client_id int,
-                total_quantity int,
-                FOREIGN KEY (client_id) REFERENCES clients(id)
-                );""";
+            var createOrderTableSql = """
+                    CREATE TABLE IF NOT EXISTS orders (
+                    id integer primary key auto_increment,
+                    client_id int,
+                    total_quantity int,
+                    FOREIGN KEY (client_id) REFERENCES clients(id)
+                    );""";
 
-        var createOrderItemTableSql = """
-                CREATE TABLE IF NOT EXISTS order_item (
-                id integer primary key auto_increment,
-                /*quantity int, quantity is problematic, would be resolved when grouping by before insert would be applied*/
-                order_id int,
-                product_id int,
-                FOREIGN KEY (order_id) REFERENCES orders(id),
-                FOREIGN KEY (product_id) REFERENCES products(id)
-                );""";
-
-        jdbi.useHandle(handle-> handle.execute(createClientTableSql));
-        jdbi.useHandle(handle-> handle.execute(createProductTableSql));
-        jdbi.useHandle(handle -> handle.execute(createOrderTableSql));
-        jdbi.useHandle(handle -> handle.execute(createOrderItemTableSql));
-
-       clientRepository = new ClientRepositoryImpl(jdbi);
-       productRepository = new ProductRepositoryImpl(jdbi);
-       orderReposiory = new OrderRepositoryImpl(jdbi);
+            var createOrderItemTableSql = """
+                    CREATE TABLE IF NOT EXISTS order_item (
+                    id integer primary key auto_increment,
+                    /*quantity int, quantity is problematic, would be resolved when grouping by before insert would be applied*/
+                    order_id int,
+                    product_id int,
+                    FOREIGN KEY (order_id) REFERENCES orders(id),
+                    FOREIGN KEY (product_id) REFERENCES products(id)
+                    );""";
 
 
-        System.out.println(clientRepository.saveAll(clients));
+            jdbi.useHandle(handle -> handle.execute(createClientTableSql));
+            jdbi.useHandle(handle -> handle.execute(createProductTableSql));
+            jdbi.useHandle(handle -> handle.execute(createOrderTableSql));
+            jdbi.useHandle(handle -> handle.execute(createOrderItemTableSql));
 
-//        System.out.println(productRepository.saveAll(products));
-
-        System.out.println(orderReposiory.saveAllOrders(createRandomOrders(
-                10,
-                3)));
+            clientRepository = new ClientRepositoryImpl(jdbi);
+            productRepository = new ProductRepositoryImpl(jdbi);
+            orderReposiory = new OrderRepositoryImpl(jdbi);
 
 
-        var test = clientRepository.getByFields(List.of(
-                new TempField("firstName", "Maciej"),
-                new TempField("lastName", "Jaremowicz"),
-                new TempField("age", "25")
-        ));
+            clientRepository.saveAll(clients);
+
+            productRepository.saveAll(products);
+
+            orderReposiory.saveAllOrders(createRandomOrders());
+        }
+        //for further use
+//        var test = clientRepository.getByFields(List.of(
+//                new TempField("firstName", "Maciej"),
+//                new TempField("lastName", "Jaremowicz"),
+//                new TempField("age", "25")
+//        ));
+    }
+
+    public static void dropTablesIfExist(Jdbi jdbi) {
+        try {
+            jdbi.withHandle(handle -> {
+
+                var tablesToDropCommands = handle.createQuery("""
+                                SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;')
+                                FROM `information_schema`.`tables`
+                                WHERE `table_schema` = 'shop';""")
+                        .mapTo(String.class)
+                        .list();
+                tablesToDropCommands.add("SET FOREIGN_KEY_CHECKS=0;");
+                Collections.rotate(tablesToDropCommands, 1);
+                for (String command : tablesToDropCommands) {
+                    handle.execute(command);
+                }
+                return true;
+            });
+        } catch (ResultSetException e) {
+            LogManager.getLogger(DataProviderService.class).error("%s, exception message: %s".formatted(
+                    "Error occurred while attempting to create database '%s'".formatted(
+                            AppProperties
+                                    .getInstance()
+                                    .getAppProperties()
+                                    .getProperty("databaseName")
+                    ),
+                    e.getMessage()
+            ));
+        }
+
     }
 
 
-
-    public static void createFileEntries(Properties appProperties){
+    public static void createFileEntries() {
 
         Function<String, List<List<String>>> func = (line) ->
                 Arrays.stream(
@@ -205,84 +248,50 @@ public class DataProviderService {
 
         var result = mapper
                 .getAllFromFile(
-                        appProperties.getProperty("filePath"),
+                        AppProperties
+                                .getInstance()
+                                .getAppProperties()
+                                .getProperty("filePath"),
                         func);
     }
 
-    public static void createJsonEntries(Properties appProperties){
-
-
-        var client = Client.builder()
-                .age(20)
-                .cash(15000f)
-                .firstName("Maciej")
-                .lastName("Jaremowicz")
-                .build();
-        var client2 = Client.builder()
-                .age(20)
-                .cash(2000f)
-                .firstName("Adam")
-                .lastName("Robertowicz")
-                .build();
-        var client3 = Client.builder()
-                .age(34)
-                .cash(3400f)
-                .firstName("Paweł")
-                .lastName("Zychowicz")
-                .build();
-        var client4 = Client.builder()
-                .age(55)
-                .cash(34000f)
-                .firstName("Maciej")
-                .lastName("Jaremowicz")
-                .build();
-
-
-
-//        var mapper = new AbstractJsonMapper<>(Client.class, Product.class);
-//        var json = mapper.mapToJson(client);
-//        var json2 = mapper.mapToJson(client2);
-//        var json3 = mapper.mapToJson(client3);
-//        var json4 = mapper.mapToJson(client4);
-//        var testResult = mapper.mapFromJson(json);
-//
-//
-//        var mapper = new AbstractJsonMapper<>(JsonModelObject.class);
-//        var result = mapper.getFromJsonFile(appProperties.getProperty("jsonPath"));
+    public static void createJsonEntries() {
+        var jsonRepo = new JsonOrderRepositoryImpl(
+                Order.class, AppProperties
+                .getInstance()
+                .getAppProperties()
+                .getProperty("jsonFileLocation"));
+        jsonRepo.saveAllOrders(createRandomOrders());
     }
 
 
-    private static List<Order> createRandomOrders(
-            int numberOfOrders, //make random
-            int maxNumberOfProducts //make random
-            ) {
-        //todo random number of products, now its hardcoded to 3
-        var clients = clientRepository.getAll();
-        var products = productRepository.getAll();
+    private static List<Order> createRandomOrders() {
+        var numberOfOrders = Integer.parseInt(AppProperties.getInstance().getAppProperties().getProperty("numberOfOrders"));
+        var maxNumberOfProducts = Integer.parseInt(AppProperties.getInstance().getAppProperties().getProperty("maxNumberOfProducts"));
+
         var ordersToSave = new ArrayList<Order>();
         var rand = new Random();
-        for(int i =0; i<=numberOfOrders; i++){
+        for (int i = 0; i <= numberOfOrders; i++) {
             ordersToSave.add(
                     new Order(clients.get(
-                            rand.nextInt(clients.size()-1)
+                            rand.nextInt(clients.size() - 1)
                     ),
                             rand
                                     .ints(maxNumberOfProducts, 0, products.size())
-                                    .mapToObj(obj->products.get(obj))
+                                    .mapToObj(obj -> products.get(obj))
                                     .toList()));
         }
-        for(Order order : ordersToSave){
-            System.out.println("Client: "+ order.getClient()+ " Buys: "+ order.getProducts());
+        for (Order order : ordersToSave) {
+            LogManager.getLogger(DataProviderService.class).info("Client: " + order.getClient() + " Buys: " + order.getProducts());
         }
         return ordersToSave;
     }
 
-    private static List<Product> getRandomProducts(int size, List<Product> availableProducts){
+    private static List<Product> getRandomProducts(int size, List<Product> availableProducts) {
         Random rand = new Random();
-
         var result = rand
                 .ints(size, 0, availableProducts.size())
-                .mapToObj(obj->availableProducts.get(obj))
+                .mapToObj(obj -> availableProducts.get(obj))
                 .toList();
         return List.of();
     }

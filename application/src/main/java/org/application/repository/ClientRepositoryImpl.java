@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.application.model.Category;
 import org.application.model.Product;
+import org.application.settings.AppProperties;
 import org.dataLoader.databaseMapper.AbstractCrudRepository;
 import org.application.model.Client;
 import org.jdbi.v3.core.Handle;
@@ -22,11 +23,12 @@ import java.util.stream.Collectors;
 
 public class ClientRepositoryImpl
         extends AbstractCrudRepository<Client, Long>
-        implements ClientRepository {
+        implements BusinessRequirements {
 
     public ClientRepositoryImpl(Jdbi jdbi) {
         super(jdbi);
     }
+
 
     @Override
     public Optional<Client> getHighestPayingClient() {
@@ -40,12 +42,17 @@ public class ClientRepositoryImpl
                 ORDER BY total_order_value DESC
                 """;
 
-        return jdbi.withHandle(handle -> handle
-                .createQuery(sql)
-                .mapToBean(Client.class)
-                .findFirst()
+        return jdbi.withHandle(handle -> {
+                    if (checkIfTableExists(handle, List.of("clients"))) {
+                        return handle
+                                .createQuery(sql)
+                                .mapToBean(Client.class)
+                                .findFirst();
+                    } else return Optional.empty();
+                }
         );
     }
+
 
     @Override
     public Optional<Client> getHighestPayingClientInCategory(Category category) {
@@ -84,16 +91,23 @@ public class ClientRepositoryImpl
                 HAVING debt<0
                 ORDER BY debt DESC;
                 """;
-        //todo ogarnąć opcję z where, prawdopodobnie nie da się bez subquery
+
         var clientsWithDebt = new AtomicReference<List<ClientDebtMapper>>(List.of());
 
         try (Handle handle = jdbi.open()) {
-            clientsWithDebt.set(
-                    handle
-                            .registerRowMapper(new ClientDebtMapper())
-                            .createQuery(sql)
-                            .mapTo(ClientDebtMapper.class)
-                            .list());
+            if (checkIfTableExists(handle,
+                    List.of(
+                            "clients",
+                            "orders",
+                            "order_item",
+                            "products"))) {
+                clientsWithDebt.set(
+                        handle
+                                .registerRowMapper(new ClientDebtMapper())
+                                .createQuery(sql)
+                                .mapTo(ClientDebtMapper.class)
+                                .list());
+            } else clientsWithDebt.set(List.of());
         }
         return clientsWithDebt
                 .get()
@@ -138,12 +152,19 @@ public class ClientRepositoryImpl
         var ageHistogram = new AtomicReference<List<AgeHistogramMapper>>(List.of());
 
         try (Handle handle = jdbi.open()) {
-            ageHistogram.set(
-                    handle
-                            .registerRowMapper(new AgeHistogramMapper())
-                            .createQuery(sql)
-                            .mapTo(AgeHistogramMapper.class)
-                            .list());
+            if (checkIfTableExists(handle,
+                    List.of(
+                            "clients",
+                            "orders",
+                            "order_item",
+                            "products"))) {
+                ageHistogram.set(
+                        handle
+                                .registerRowMapper(new AgeHistogramMapper())
+                                .createQuery(sql)
+                                .mapTo(AgeHistogramMapper.class)
+                                .list());
+            } else ageHistogram.set(List.of());
         }
         // group age and category
         Map<Integer, Map<String, Integer>> groupedByAgeAndCategory = ageHistogram.get().stream()
@@ -194,46 +215,50 @@ public class ClientRepositoryImpl
         var minMaxAverageOfProductsInCategory = new AtomicReference<Map<String, Map<String, Product>>>(Map.of());
 
         try (Handle handle = jdbi.open()) {
-            var lowestPrice =
-                    handle
-                            .createQuery(lowestPriceSql)
-                            .mapToBean(Product.class)
-                            .findFirst()
-                            .orElse(null);
-            var highestPrice =
-                    handle
-                            .createQuery(highestPriceSql)
-                            .mapToBean(Product.class)
-                            .findFirst()
-                            .orElse(null);
+            if (checkIfTableExists(handle,
+                    List.of(
+                            "products"))) {
+                var lowestPrice =
+                        handle
+                                .createQuery(lowestPriceSql)
+                                .mapToBean(Product.class)
+                                .findFirst()
+                                .orElse(null);
+                var highestPrice =
+                        handle
+                                .createQuery(highestPriceSql)
+                                .mapToBean(Product.class)
+                                .findFirst()
+                                .orElse(null);
 
-            var avg = handle
-                    .createQuery(avrPriceSql)
-                    .mapTo(String.class)
-                    .findFirst()
-                    .orElse("-1");
+                var avg = handle
+                        .createQuery(avrPriceSql)
+                        .mapTo(String.class)
+                        .findFirst()
+                        .orElse("-1");
 
-            var tempValue = new BigDecimal(avg)
-                    .setScale(2, RoundingMode.HALF_UP);
+                var tempValue = new BigDecimal(avg)
+                        .setScale(2, RoundingMode.HALF_UP);
 
-            minMaxAverageOfProductsInCategory.set(Map.of(
-                    "Lowest value Product",
-                    Map.of(
-                            lowestPrice!=null?lowestPrice.getPrice().toString()
-                                    :"Didn't found instance",
-                            lowestPrice!=null?lowestPrice: Product.builder().build()),
-                    "Highest value Product",
-                    Map.of(
-                            highestPrice!=null?highestPrice.getPrice().toString()
-                                    :"Didn't found instance",
-                            highestPrice!=null?highestPrice: Product.builder().build()),
-                    "Average price of products in category %s".formatted(category.getName()),
-                    Map.of(
-                            tempValue.compareTo(BigDecimal.ZERO) != -1 ? tempValue.toString()
-                                    : "Error occurred while mapping average value"
-                            , new Product())
+                minMaxAverageOfProductsInCategory.set(Map.of(
+                        "Lowest value Product",
+                        Map.of(
+                                lowestPrice != null ? lowestPrice.getPrice().toString()
+                                        : "Didn't found instance",
+                                lowestPrice != null ? lowestPrice : Product.builder().build()),
+                        "Highest value Product",
+                        Map.of(
+                                highestPrice != null ? highestPrice.getPrice().toString()
+                                        : "Didn't found instance",
+                                highestPrice != null ? highestPrice : Product.builder().build()),
+                        "Average price of products in category %s".formatted(category.getName()),
+                        Map.of(
+                                tempValue.compareTo(BigDecimal.ZERO) != -1 ? tempValue.toString()
+                                        : "Error occurred while mapping average value"
+                                , new Product())
 
-            ));
+                ));
+            } else minMaxAverageOfProductsInCategory.set(Map.of());
         }
         return minMaxAverageOfProductsInCategory.get();
     }
@@ -261,50 +286,77 @@ public class ClientRepositoryImpl
         var resultsMap = new AtomicReference<Map<Category, List<Client>>>(Map.of());
 
         try (Handle handle = jdbi.open()) {
-            handle.createQuery(sql)
-                    .map((r, ctx) -> {
-                                var result = new Object() {
+            if (checkIfTableExists(handle,
+                    List.of(
+                            "clients",
+                            "orders",
+                            "order_item",
+                            "products"))) {
+                handle.createQuery(sql)
+                        .map((r, ctx) -> {
+                                    var result = new Object() {
 
-                                    public String category = r.getString("category");
-                                    public String firstName = r.getString("firstName");
-                                    public String lastName = r.getString("lastName");
+                                        public String category = r.getString("category");
+                                        public String firstName = r.getString("firstName");
+                                        public String lastName = r.getString("lastName");
 
-                                    public Client getClient() {
-                                        return Client
-                                                .builder()
-                                                .id(0L)
-                                                .firstName(firstName)
-                                                .lastName(lastName)
-                                                .age(0)
-                                                .cash(0f)
-                                                .build();
+                                        public Client getClient() {
+                                            return Client
+                                                    .builder()
+                                                    .id(0L)
+                                                    .firstName(firstName)
+                                                    .lastName(lastName)
+                                                    .age(0)
+//                                                    .cash(BigDecimal.valueOf(0f))
+                                                    .cash(0f)
+                                                    .build();
 //                                                new Client(0L, firstName, lastName, 0, 0f);
-                                    }
+                                        }
 
-                                };
-                                //complicated logic but there is possibility that there are more than one client,
-                                //that bought highest number of products from category
-                                //so this instance needs to be resolved,
-                                // with multiple clients in list assigned to one category key in the map
-                                if (resultsMap.get()
-                                        .keySet()
-                                        .stream()
-                                        .anyMatch((element) -> element.getName().equals(result.category))) {
-                                    var tempMap = resultsMap.get();
-                                    tempMap.get(Category.getCategory(result.category)).add(result.getClient());
-                                    resultsMap.set(tempMap);
-                                } else {
-                                    var currentCategory = Category.getCategory(result.category);
-                                    var tempMap = new HashMap<>(resultsMap.get());
-                                    tempMap.put(currentCategory, new LinkedList<>());
-                                    tempMap.get(currentCategory).add(result.getClient());
-                                    resultsMap.set(tempMap);
+                                    };
+                                    //complicated logic but there is possibility that there are more than one client,
+                                    //that bought highest number of products from category
+                                    //so this instance needs to be resolved,
+                                    // with multiple clients in list assigned to one category key in the map
+                                    if (resultsMap.get()
+                                            .keySet()
+                                            .stream()
+                                            .anyMatch((element) -> element.getName().equals(result.category))) {
+                                        var tempMap = resultsMap.get();
+                                        tempMap.get(Category.getCategory(result.category)).add(result.getClient());
+                                        resultsMap.set(tempMap);
+                                    } else {
+                                        var currentCategory = Category.getCategory(result.category);
+                                        var tempMap = new HashMap<>(resultsMap.get());
+                                        tempMap.put(currentCategory, new LinkedList<>());
+                                        tempMap.get(currentCategory).add(result.getClient());
+                                        resultsMap.set(tempMap);
+                                    }
+                                    return result;
                                 }
-                                return result;
-                            }
-                    ).collect(Collectors.toList());
+                        ).collect(Collectors.toList());
+            } else resultsMap.set(Map.of());
         }
         return resultsMap.get();
+    }
+
+    private boolean checkIfTableExists(Handle handle, List<String> tableNames) {
+
+        return handle.createQuery("""
+                        SELECT COUNT(table_name)
+                        FROM information_schema.tables
+                        WHERE table_schema = '%s' AND table_name IN ( %s );
+                        """.formatted(
+                        AppProperties
+                                .getInstance()
+                                .getAppProperties()
+                                .getProperty("databaseName"),
+                        tableNames.stream()
+                                .map(s -> "'" + s + "'")
+                                .collect(Collectors.joining(", "))))
+                .mapTo(Integer.class)
+                .findFirst()
+                .orElse(0) == tableNames.size();
     }
 }
 
