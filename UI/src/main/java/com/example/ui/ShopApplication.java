@@ -4,10 +4,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.application.model.Category;
-
 import java.io.IOException;
-import java.util.Arrays;
 
 public class ShopApplication extends Application {
     @Override
@@ -20,7 +17,6 @@ public class ShopApplication extends Application {
     }
 
     public static void main(String[] args) {
-        System.out.println(Arrays.asList(Category.values()).stream().map(Category::getName).toList());
         launch();
     }
 }

@@ -1,50 +1,35 @@
 package org.application.service;
 
 import org.application.model.Category;
-import org.application.model.Client;
 import org.application.model.Order;
-import org.application.model.Product;
 import org.application.repository.*;
+import org.application.settings.AppProperties;
 import org.dataLoader.DatabaseConnection;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class ClientService {
 
-    private ClientRepository clientRepository;
+    private BusinessRequirements businessRequrementsRepository;
 
-    private Properties appProperties;
-
-    public ClientService(ClientRepository repository) {
-        this.clientRepository = repository;
+    public ClientService(BusinessRequirements repository) {
+        this.businessRequrementsRepository = repository;
     }
 
     public ClientService(DataSource source) {
-        this.appProperties = new Properties();
-        try {
-            appProperties
-                    .load(new FileInputStream("D:\\Sandbox\\KMShop\\shop\\application\\src\\main\\resources\\app.properties"));
-        } catch (IOException e) {
-//            throw new RuntimeException(e);
-            System.out.println("well");
-        }
         switch (source) {
             case DATABASE -> createDatabaseRepository();
             case TXT_FILE -> createTextFileRepository();//todo add repository
-            case JSON_FILE -> createJsonFileRepository();//todo add repository
+            case JSON_FILE, EMPTY -> createJsonFileRepository();
         }
     }
 
+
+
     //done
     public String getHighestPayingCustomer() {
-        var client = clientRepository.getHighestPayingClient().orElse(null);
+        var client = businessRequrementsRepository.getHighestPayingClient().orElse(null);
         if (client == null) {
             return noData();
         }
@@ -53,7 +38,7 @@ public class ClientService {
 
     //done
     public String checkClientsDebt() {
-        var debtMap = clientRepository.checkClientsDebt();
+        var debtMap = businessRequrementsRepository.checkClientsDebt();
         if (debtMap == null) {
             return noData();
         }
@@ -72,7 +57,7 @@ public class ClientService {
     public String getHighestPayingClientInCategory(String category) {
         try {
             var tempCategory = Category.getCategory(category);
-            var client = clientRepository.getHighestPayingClientInCategory(tempCategory).orElse(null);
+            var client = businessRequrementsRepository.getHighestPayingClientInCategory(tempCategory).orElse(null);
             if (client == null || (client.getFirstName()==null || client.getLastName()==null)) {
                 return noData();
             }
@@ -85,7 +70,7 @@ public class ClientService {
 
     //done
     public String getMostBoughtProductCategoryBasedOnAge() {
-        var ageProductMap = clientRepository.getMostBoughtProductCategoryBasedOnAge();
+        var ageProductMap = businessRequrementsRepository.getMostBoughtProductCategoryBasedOnAge();
         if (ageProductMap == null) {
             return noData();
         }
@@ -108,7 +93,7 @@ public class ClientService {
 
     public String getClientsThatBoughtTheMostProductsBasedOnCategory() {
         var mostBoughtCategoryBasedOnProducts =
-                clientRepository.getClientsThatBoughtTheMostProductsBasedOnCategory();
+                businessRequrementsRepository.getClientsThatBoughtTheMostProductsBasedOnCategory();
         if (mostBoughtCategoryBasedOnProducts == null) {
             return noData();
         }
@@ -147,7 +132,7 @@ public class ClientService {
         try {
             var tempCategory = Category.getCategory(category);
             var productStatisticMap =
-                    clientRepository
+                    businessRequrementsRepository
                             .getMapWithAverageMaxAndMinValuesForProductsInSpecifiedCategory(tempCategory);
             if (productStatisticMap == null) {
                 return noData();
@@ -183,15 +168,26 @@ public class ClientService {
     }
 
     private void createDatabaseRepository() {
-        if (appProperties.size() > 0)
-            clientRepository = new ClientRepositoryImpl(DatabaseConnection.create(appProperties));
+        if (AppProperties
+                .getInstance()
+                .getAppProperties()!=null &&
+                AppProperties
+                .getInstance()
+                .getAppProperties()
+                .size() > 0) {
+            businessRequrementsRepository = new ClientRepositoryImpl(DatabaseConnection.create(AppProperties
+                    .getInstance()
+                    .getAppProperties()));
+        }
     }
 
     private void createTextFileRepository() {
     }
 
     private void createJsonFileRepository() {
-        clientRepository = new JsonOrderRepositoryImpl(Order.class, appProperties.getProperty("jsonFileLocation"));
+        businessRequrementsRepository = new JsonOrderRepositoryImpl(Order.class, AppProperties
+                .getInstance()
+                .getAppProperties().getProperty("jsonFileLocation"));
     }
 
     private String noData() {

@@ -5,6 +5,7 @@ module data.loader {
     requires evo.inflector;
     requires com.google.common;
     requires lombok;
+    requires java.sql;
 
     exports org.dataLoader;
     exports org.dataLoader.fileMapper;

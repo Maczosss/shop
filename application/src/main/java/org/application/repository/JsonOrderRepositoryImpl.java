@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class JsonOrderRepositoryImpl
         extends AbstractJsonMapper<Order>
-        implements OrderRepository<Order, Long>, ClientRepository{
+        implements OrderRepository<Order, Long>, BusinessRequirements {
 
     private final String PATH_TO_JSON_FILE_LOCATION;
     public JsonOrderRepositoryImpl(Class<Order> entityType, String jsonFilePath) {

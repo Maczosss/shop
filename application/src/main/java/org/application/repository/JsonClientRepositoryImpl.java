@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public class JsonClientRepositoryImpl
         extends AbstractJsonMapper<Client>
-        implements ClientRepository {
+        implements BusinessRequirements {
 
     public JsonClientRepositoryImpl(Class<Client> entityType) {
         super(entityType);

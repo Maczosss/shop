@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.application.model.Category;
 import org.application.model.Product;
+import org.application.settings.AppProperties;
 import org.dataLoader.databaseMapper.AbstractCrudRepository;
 import org.application.model.Client;
 import org.jdbi.v3.core.Handle;
@@ -16,20 +17,18 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ClientRepositoryImpl
         extends AbstractCrudRepository<Client, Long>
-        implements ClientRepository {
+        implements BusinessRequirements {
 
     public ClientRepositoryImpl(Jdbi jdbi) {
         super(jdbi);
     }
 
-    //TODO przerobić testowanie
 
     @Override
     public Optional<Client> getHighestPayingClient() {
@@ -92,7 +91,7 @@ public class ClientRepositoryImpl
                 HAVING debt<0
                 ORDER BY debt DESC;
                 """;
-        //todo ogarnąć opcję z where, prawdopodobnie nie da się bez subquery
+
         var clientsWithDebt = new AtomicReference<List<ClientDebtMapper>>(List.of());
 
         try (Handle handle = jdbi.open()) {
@@ -308,6 +307,7 @@ public class ClientRepositoryImpl
                                                     .firstName(firstName)
                                                     .lastName(lastName)
                                                     .age(0)
+//                                                    .cash(BigDecimal.valueOf(0f))
                                                     .cash(0f)
                                                     .build();
 //                                                new Client(0L, firstName, lastName, 0, 0f);
@@ -342,12 +342,15 @@ public class ClientRepositoryImpl
 
     private boolean checkIfTableExists(Handle handle, List<String> tableNames) {
 
-        //todo name of db is hardcoded, needs to be read from properties
         return handle.createQuery("""
                         SELECT COUNT(table_name)
                         FROM information_schema.tables
                         WHERE table_schema = '%s' AND table_name IN ( %s );
-                        """.formatted("shop",
+                        """.formatted(
+                        AppProperties
+                                .getInstance()
+                                .getAppProperties()
+                                .getProperty("databaseName"),
                         tableNames.stream()
                                 .map(s -> "'" + s + "'")
                                 .collect(Collectors.joining(", "))))

@@ -2,6 +2,7 @@ package org.dataLoader.fileMapper;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -21,6 +22,7 @@ public class AbstractFromFileMapper<T, U> implements FromFileMapper<T, U> {
         this.entityType = entityType;
         this.typeContent = typeContent;
     }
+
     @Override
     public Map<T, Map<U, Integer>> getAllFromFile(String path, Function keyMapper) {
 
@@ -69,6 +71,7 @@ public class AbstractFromFileMapper<T, U> implements FromFileMapper<T, U> {
         }
         return Optional.empty();
     }
+
     private Map<U, Integer> createValues(List<Object> source) {
         for (Object el : source) {
             var first = (List<String>) el;
@@ -88,8 +91,7 @@ public class AbstractFromFileMapper<T, U> implements FromFileMapper<T, U> {
                         .getConstructor(parameters)
                         .newInstance(values.toArray());
                 this.values.add(mappedTempKey);
-            }
-            catch (InstantiationException |
+            } catch (InstantiationException |
                      IllegalAccessException |
                      InvocationTargetException |
                      NoSuchMethodException e) {
@@ -99,13 +101,14 @@ public class AbstractFromFileMapper<T, U> implements FromFileMapper<T, U> {
         //remove copies, and count reoccurrences
         Map<U, Integer> resultMap = new HashMap<>();
         Set<U> removedCopiesSet = new HashSet<U>(values);
-        for(U element: removedCopiesSet){
+        for (U element : removedCopiesSet) {
             var occurences = Collections.frequency(values, element);
             resultMap.put(element, occurences);
         }
         values = new ArrayList<>();
         return resultMap;
     }
+
     private List<Object> getValues(Class<?>[] parameters, String[] stringValues) {
         //todo add support for other types
         List<Object> values = new ArrayList();
@@ -121,6 +124,12 @@ public class AbstractFromFileMapper<T, U> implements FromFileMapper<T, U> {
                             Float.valueOf(
                                     String.valueOf(stringValues[i])));
                     break;
+                case "BigDecimal":
+                    values.add(
+                            new BigDecimal(
+                                    String.valueOf(stringValues[i])));
+                    break;
+
                 default:
                     values.add(stringValues[i]);
                     break;
